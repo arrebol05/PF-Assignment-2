@@ -172,11 +172,8 @@ public:
     string str() const;
     // TODO
 
+    UnitList(int LF, int EXP);
     ~UnitList();
-    int getCapacity() const;
-    int getVehicleNumber() const;
-    int getInfantryNumber() const;
-    int getTotalUnitNumber() const;
     UnitNode* getHead() const;
 };
 
@@ -251,6 +248,7 @@ public:
     ~BattleField();
 };
 
+// TODO: Class Configuration
 class Configuration {
 private:
     int num_rows, num_cols;
