@@ -113,9 +113,9 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField) {
         const Infantry *infantry = dynamic_cast<const Infantry*>(unitArray[i]);
 
         if (vehicle) {
-            this->LF += const_cast<Vehicle*>(vehicle)->getAttackScore();
+            this->LF += unitArray[i]->getAttackScore();
         } else if (infantry) {
-            this->EXP += const_cast<Infantry*>(infantry)->getAttackScore();
+            this->EXP += unitArray[i]->getAttackScore();
         }
     }
 
@@ -124,6 +124,32 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField) {
     for (int i = 0; i < size; i++) {
         this->unitList->insert(dynamic_cast<Unit*>(unitArray[i]));
     }
+}
+
+////////////////////////////// Class LiberationArmy //////////////////////////////
+LiberationArmy::LiberationArmy(Unit** unitArray, int size, string name, BattleField* battleField) : Army(unitArray, size, name, battleField) {}
+
+void LiberationArmy::fight(Army* enemy, bool defense = false) {
+    if (!defense) {
+        this->LF *= 1.5;
+        this->EXP *= 1.5;
+
+        
+    }
+}
+
+string LiberationArmy::str() const {
+    return "LiberationArmy[name=" + this->name + ",LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + this->battleField->str() + "]";
+}
+
+////////////////////////////// Class ARVN //////////////////////////////
+ARVN::ARVN(Unit** unitArray, int size, string name, BattleField* battleField) : Army(unitArray, size, name, battleField) {}
+
+void ARVN::fight(Army* fight, bool defense = false) {
+
+}
+string ARVN::str() const {
+    return "ARVN[name=" + this->name + ",LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + this->battleField->str() + "]";
 }
 
 ////////////////////////////// Class UnitList //////////////////////////////
@@ -187,9 +213,80 @@ UnitList::UnitList(int LF, int EXP) {
     this->countInfantry = 0;
 }
 
-
 bool UnitList::insert(Unit *unit) {
+    if (countVehicle + countInfantry >= capacity) {
+        return false;
+    }
 
+    Vehicle* vehicle = dynamic_cast<Vehicle*>(unit);
+    Infantry* infantry = dynamic_cast<Infantry*>(unit);
+
+    UnitNode* newNode = new UnitNode;
+    newNode->unit = unit;
+    newNode->next = nullptr;
+
+    if (vehicle) {
+        if (!this->head) {
+            this->head = newNode;
+        } else {
+            UnitNode* current = this->head;
+            while (current) {
+                current = current->next;
+            }
+            current->next = newNode;
+        }
+    } else if (infantry) {
+        newNode->next = this->head;
+        this->head = newNode;
+        this->countInfantry++;
+    }
+
+    return true;
+}
+
+bool UnitList::isContain(VehicleType vehicleType) {
+    UnitNode* current = this->head;
+
+    while (current) {
+        Vehicle* vehicle = dynamic_cast<Vehicle*>(current->unit);
+
+        if (vehicle && vehicle->vehicleType == vehicleType) {
+            return true;
+        }
+
+        current = current->next;
+    }
+
+    return false;
+}
+
+bool UnitList::isContain(InfantryType infantryType) {
+    UnitNode* current = this->head;
+
+    while (current) {
+        Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
+
+        if (infantry && infantry->infantryType == infantryType) {
+            return true;
+        }
+
+        current = current->next;
+    }
+
+    return false;
+}
+
+string UnitList::str() const {
+    string output = "UnitList[count_vehicle=" + to_string(this->countVehicle) + ";count_infantry=" + to_string(this->countInfantry) + ";" + this->head->unit->str();
+
+    UnitNode* current = this->head->next;
+    while (current) {
+        output += "," + current->unit->str();
+        current = current->next;
+    }    
+
+    output += "]";
+    return output;
 }
 
 UnitList::~UnitList() {
@@ -202,7 +299,11 @@ UnitList::~UnitList() {
     }
 }
 
+////////////////////////////// Class BattleField //////////////////////////////
 
+string BattleField::str() const {
+    return "BattleField[n_rows=" + to_string(this->n_rows) + ",n_cols=" + to_string(this->n_cols);
+}
 
 ////////////////////////////////////////////////
 /// END OF STUDENT'S ANSWER

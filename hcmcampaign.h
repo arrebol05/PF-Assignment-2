@@ -64,6 +64,7 @@ enum InfantryType
     REGULARINFANTRY
 };
 
+
 class Army
 {
 protected:
@@ -81,7 +82,7 @@ public:
 // TODO: Class LiberationArmy
 class LiberationArmy : public Army {
 public:
-    LiberationArmy(const Unit** unitArray, int size, string name, BattleField* battleField);
+    LiberationArmy(Unit** unitArray, int size, string name, BattleField* battleField);
     void fight(Army* enemy, bool defense = false) override;
     string str() const override;
 };
@@ -89,10 +90,11 @@ public:
 // TODO: Class ARVN
 class ARVN : public Army {
 public:
-    ARVN(const Unit** unitArray, int size, string name, BattleField* BattleField);
+    ARVN(Unit** unitArray, int size, string name, BattleField* BattleField);
     void fight(Army* enemy, bool defense = false) override;
     string str() const override;
 };
+
 
 class Position
 {
@@ -108,6 +110,7 @@ public:
     void setCol(int c);
     string str() const; // Example: returns "(1,15)"
 };
+
 
 class Unit
 {
@@ -125,6 +128,7 @@ public:
 
 // TODO: Class Vehicle
 class Vehicle : public Unit {
+friend class UnitList;
 private:
     VehicleType vehicleType;
 
@@ -136,6 +140,7 @@ public:
 
 // TODO: Class Infantry
 class Infantry : public Unit {
+friend class UnitList;
 private:
     InfantryType infantryType;
     int calPersonalNumber(int number);
@@ -145,6 +150,7 @@ public:
     int getAttackScore() override;
     string str() const override;
 };
+
 
 // TODO: Struct UnitNode
 struct UnitNode {
@@ -174,8 +180,8 @@ public:
 
     UnitList(int LF, int EXP);
     ~UnitList();
-    UnitNode* getHead() const;
 };
+
 
 class TerrainElement
 {
@@ -233,6 +239,7 @@ public:
     void getEffect(Army *army) override;
 };
 
+
 class BattleField
 {
 private:
@@ -246,7 +253,11 @@ public:
                 vector<Position *> arrayRiver, vector<Position *> arrayFortification,
                 vector<Position *> arrayUrban, vector<Position *> arraySpecialZone);
     ~BattleField();
+
+    // TODO
+    string str() const;
 };
+
 
 // TODO: Class Configuration
 class Configuration {
@@ -268,6 +279,7 @@ public:
     ~Configuration();
     string str() const;
 };
+
 
 class HCMCampaign
 {
