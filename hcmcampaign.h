@@ -77,10 +77,19 @@ public:
     Army(Unit **unitArray, int size, string name, BattleField *battleField);
     virtual void fight(Army *enemy, bool defense = false) = 0;
     virtual string str() const = 0;
+
+    // TODO: Helper
+    UnitList* getUnitList() const;
+    int getLF() const;
+    int getEXP() const;
 };
 
 // TODO: Class LiberationArmy
 class LiberationArmy : public Army {
+friend class UnitList;
+private: 
+    int getNearestFibonacci(int number);
+
 public:
     LiberationArmy(Unit** unitArray, int size, string name, BattleField* battleField);
     void fight(Army* enemy, bool defense = false) override;
@@ -89,6 +98,7 @@ public:
 
 // TODO: Class ARVN
 class ARVN : public Army {
+friend class UnitList;
 public:
     ARVN(Unit** unitArray, int size, string name, BattleField* BattleField);
     void fight(Army* enemy, bool defense = false) override;
@@ -124,6 +134,12 @@ public:
     virtual int getAttackScore() = 0;
     Position getCurrentPosition() const;
     virtual string str() const = 0;
+
+    // TODO: Helper
+    int getQuantity() const;
+    int getWeight() const;
+    void setQuantity(int quantity);
+    void setWeight(int weight);
 };
 
 // TODO: Class Vehicle
@@ -136,6 +152,9 @@ public:
     Vehicle(int quantity, int weight, const Position pos, VehicleType vehicleType);
     int getAttackScore() override;
     string str() const override;
+
+    // TODO: Helper
+    VehicleType getVehicleType() const;
 };
 
 // TODO: Class Infantry
@@ -149,6 +168,9 @@ public:
     Infantry(int quantity, int weight, const Position pos, InfantryType infantryType);
     int getAttackScore() override;
     string str() const override;
+
+    // TODO: Helper
+    InfantryType getInfantryType() const;
 };
 
 
@@ -180,6 +202,11 @@ public:
 
     UnitList(int LF, int EXP);
     ~UnitList();
+    UnitNode* getHead() const;
+    void remove(UnitNode* node);
+    void setHead(UnitNode* node);
+    void setVehicleCount();
+    void setInfantryCount();
 };
 
 
