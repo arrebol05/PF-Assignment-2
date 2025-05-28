@@ -187,8 +187,8 @@ private:
     // TODO
 
     UnitNode* head;
-    int countVehicle;
-    int countInfantry;
+    int vehicleCount;
+    int infantryCount;
 
     bool isSpecialNumber(int number);
 
@@ -205,8 +205,11 @@ public:
     UnitNode* getHead() const;
     void remove(UnitNode* node);
     void setHead(UnitNode* node);
-    void setVehicleCount();
-    void setInfantryCount();
+    void decreaseVehicleCount();
+    void decreaseInfantryCount();
+    void deleteUnit(Unit* unit);
+    void deleteVehicle(Vehicle* vehicle);
+    void deleteInfantry(Infantry* infantry);
 };
 
 
@@ -228,6 +231,8 @@ public:
 
 // TODO: Class Mountain
 class Mountain : public TerrainElement {
+private: 
+    double calculateDistance(const Position& pos1, const Position& pos2);
 public:
     Mountain();
     ~Mountain();
