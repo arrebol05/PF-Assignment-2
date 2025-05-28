@@ -185,8 +185,8 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
     // Attack case
     if (!defense) {
         // Liberation Army got a boost
-        this->LF *= 1.5;
-        this->EXP *= 1.5;
+        this->LF = static_cast<int>(ceil(this->LF * 1.5));
+        this->EXP = static_cast<int>(ceil(this->EXP * 1.5));
 
         /*
         Get vectors of vehicles & infantries for handling.
@@ -196,9 +196,11 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
         vector<Vehicle*> vehicleUnits;
         vector<Infantry*> infantryUnits;
         vector<int> vehicleScores, infantryScores;
+
         // Setup to initialize min as the sum of list vehicles/ infantries
         int minVehicleScore = 0;
         int minInfantryScore = 0;
+
         // Traverse from head to tail
         UnitNode* current = this->unitList->getHead();
         while (current) {
@@ -230,22 +232,20 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
         // We only loop and get in case of there exists a combination
         if (foundVehicleCombination) {
             int vehicleCount = vehicleUnits.size();
+
             // Bitmask technique to get all combination
             for (int mask = 1; mask < (1 << vehicleCount); mask++) {
                 vector<Vehicle *> combination;
                 int totalScore = 0;
 
-                for (int i = 0; i < vehicleCount; i++)
-                {
-                    if (mask & (1 << i))
-                    {
+                for (int i = 0; i < vehicleCount; i++) {
+                    if (mask & (1 << i)) {
                         combination.push_back(vehicleUnits[i]);
                         totalScore += vehicleScores[i];
                     }
                 }
 
-                if (totalScore > enemy->getEXP() && totalScore < minVehicleScore)
-                {
+                if (totalScore > enemy->getEXP() && totalScore < minVehicleScore) {
                     minVehicleScore = totalScore;
                     bestVehicleCombination = combination;
                 }
@@ -254,22 +254,18 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
         
         if (foundInfantryCombination) {
             int infantryCount = infantryUnits.size();
-            for (int mask = 1; mask < (1 << infantryCount); mask++)
-            {
+            for (int mask = 1; mask < (1 << infantryCount); mask++) {
                 vector<Infantry*> combination;
                 int totalScore = 0;
 
-                for (int i = 0; i < infantryCount; i++)
-                {
-                    if (mask & (1 << i))
-                    {
+                for (int i = 0; i < infantryCount; i++) {
+                    if (mask & (1 << i)) {
                         combination.push_back(infantryUnits[i]);
                         totalScore += infantryScores[i];
                     }
                 }
 
-                if (totalScore > enemy->getEXP() && totalScore < minInfantryScore)
-                {
+                if (totalScore > enemy->getEXP() && totalScore < minInfantryScore) {
                     minInfantryScore = totalScore;
                     bestInfantryCombination = combination;
                 }
@@ -279,6 +275,7 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
         // Condition check for fight result
         // Case found both combination: Will definitely win
         if (foundVehicleCombination && foundInfantryCombination) {
+            // Delete all the combinations, add enemy
             for (Vehicle* unit : bestVehicleCombination) {
                 this->unitList->deleteVehicle(unit);
             }
@@ -287,6 +284,7 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
                 this->unitList->deleteInfantry(unit);
             }
 
+            // Repurpose enemy's units
             UnitNode* current = enemy->getUnitList()->getHead();
             while (current) {
                 Unit* unitCopy = nullptr;
@@ -295,74 +293,58 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
                 Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
 
                 if (vehicle) {
-                    unitCopy = new Vehicle(vehicle->getQuantity(), vehicle->getWeight(), vehicle->getCurrentPosition(), vehicle->getVehicleType());
+                    Vehicle* existVehicle = this->unitList->getVehicle(vehicle->getVehicleType());
+                    if (existVehicle) {
+                        // Add quantity to existing vehicle
+                        existVehicle->setQuantity(existVehicle->getQuantity() + vehicle->getQuantity());
+                    } else {
+                        // Create new vehicle copy
+                        unitCopy = new Vehicle(vehicle->getQuantity(), vehicle->getWeight(), vehicle->getCurrentPosition(), vehicle->getVehicleType());
+                        this->unitList->insert(unitCopy);
+                    }
                 } else if (infantry) {
-                    unitCopy = new Infantry(infantry->getQuantity(), infantry->getWeight(), infantry->getCurrentPosition(), infantry->getInfantryType());
-                }
-
-                if (unitCopy) {
-                    this->unitList->insert(unitCopy);
+                    Infantry* existInfantry = this->unitList->getInfantry(infantry->getInfantryType());
+                    if (existInfantry) {
+                        // Add quantity to existing infantry
+                        existInfantry->setQuantity(existInfantry->getQuantity() + infantry->getQuantity());
+                    } else {
+                        // Create new infantry copy
+                        unitCopy = new Infantry(infantry->getQuantity(), infantry->getWeight(), infantry->getCurrentPosition(), infantry->getInfantryType());
+                        this->unitList->insert(unitCopy);
+                    }
                 }
 
                 current = current->next;
             }
+
+            delete enemy; 
+            enemy = nullptr;
+
+            // Update LF & EXP
         } else if (foundVehicleCombination || foundInfantryCombination) {
+            // Case found one of the two combinations - stalements
             bool canWin = false;
 
-            if (foundVehicleCombination && !foundInfantryCombination) {
+            if (foundVehicleCombination && !foundInfantryCombination && this->LF > enemy->getLF()) {
                 canWin = true;
-
-                for (Vehicle* unit : bestVehicleCombination) {
-                    UnitNode* current = this->unitList->getHead();
-                    UnitNode* prev = nullptr;
-
-                    while (current) {
-                        if (current->unit == unit) {
-                            if (prev) {
-                                prev->next = current->next;
-                            } else {
-                                this->unitList->setHead(current->next);
-                            }
-                        }
-
-                        this->unitList->decreaseVehicleCount();
-                        delete current;
-                        break;
-                    }
-
-                    prev = current;
-                    current = current->next;
-                }
-            } else if (!foundVehicleCombination && foundInfantryCombination) {
-                canWin = true;
-
                 for (Infantry* unit : bestInfantryCombination) {
+                    // Delete infantry combinations
                     this->unitList->deleteInfantry(unit);
                 }
 
-                UnitNode* current = this->unitList->getHead();
-                UnitNode* prev = nullptr;
-
-                while (current) {
-                    if (dynamic_cast<Vehicle*>(current->unit)) {
-                        if (prev) {
-                            prev->next = current->next;
-                        } else {
-                            this->unitList->setHead(current->next);
-                        }
-
-                        UnitNode* toDelete = current;
-                        current = current->next;
-                        this->unitList->decreaseInfantryCount();
-                        delete toDelete;
-                    } else {
-                        prev = current;
-                        current = current->next;
-                    }
+                // Delete all vehicle units
+            } else if (!foundVehicleCombination && foundInfantryCombination && this->EXP > enemy->getEXP()) {
+                canWin = true;
+                for (Vehicle* unit : bestVehicleCombination) {
+                    // Delete vehicle combinations
+                    this->unitList->deleteVehicle(unit);
                 }
+
+                // Delete all infantry units
             }
 
             if (canWin) {
+                // Win - repurpose enemy's units
                 UnitNode* current = enemy->getUnitList()->getHead();
                 while (current) {
                     Unit* unitCopy = nullptr;
@@ -371,136 +353,129 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
                     Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
 
                     if (vehicle) {
-                        unitCopy = new Vehicle(vehicle->getQuantity(), vehicle->getWeight(), vehicle->getCurrentPosition(), vehicle->getVehicleType());
+                        Vehicle* existVehicle = this->unitList->getVehicle(vehicle->getVehicleType());
+                        if (existVehicle) {
+                            // Add quantity to existing vehicle
+                            existVehicle->setQuantity(existVehicle->getQuantity() + vehicle->getQuantity());
+                        } else {
+                            // Create new vehicle copy
+                            unitCopy = new Vehicle(vehicle->getQuantity(), vehicle->getWeight(), vehicle->getCurrentPosition(), vehicle->getVehicleType());
+                            this->unitList->insert(unitCopy);
+                        }
                     } else if (infantry) {
-                        unitCopy = new Infantry(infantry->getQuantity(), infantry->getWeight(), infantry->getCurrentPosition(), infantry->getInfantryType());
-                    }
-
-                    if (unitCopy) {
-                        this->unitList->insert(unitCopy);
+                        Infantry* existInfantry = this->unitList->getInfantry(infantry->getInfantryType());
+                        if (existInfantry) {
+                            // Add quantity to existing infantry
+                            existInfantry->setQuantity(existInfantry->getQuantity() + infantry->getQuantity());
+                        } else {
+                            // Create new infantry copy
+                            unitCopy = new Infantry(infantry->getQuantity(), infantry->getWeight(), infantry->getCurrentPosition(), infantry->getInfantryType());
+                            this->unitList->insert(unitCopy);
+                        }
                     }
 
                     current = current->next;
                 }
+
+                delete enemy;
+                enemy = nullptr;
+
+                // Update LF & EXP
             } else {
+                // Lose - each units lost 10% its weight
                 UnitNode* current = this->unitList->getHead();
                 while (current) {
                     int newWeight = (int)ceil(current->unit->getWeight() * 0.9);
                     current->unit->setWeight(newWeight);
                 }
+
+                // Recalculate indices
             }
         } else {
-            UnitNode* current = this->unitList->getHead();
-            while (current) {
-                int newWeight = (int)ceil(current->unit->getWeight() * 0.9);
-                current->unit->setWeight(newWeight);
-            }
-        }
-
-        this->LF = 0;
-        this->EXP = 0;
-
-        UnitNode* current = this->unitList->getHead();
-        while (current) {
-            Vehicle* vehicle = dynamic_cast<Vehicle*>(current->unit);
-            Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
-
-            if (vehicle) {
-                this->LF += vehicle->getAttackScore();
-            } else if (infantry) {
-                this->EXP += infantry->getAttackScore();
-            }
-
-            current = current->next;
-        }
-    } else {
-        this->LF = (int)ceil(this->LF * 1.3);
-        this->EXP = (int)ceil(this->EXP * 1.3);
-
-        if (this->LF < enemy->getLF() || this->EXP < enemy->getEXP()) {
-            if ((this->LF < enemy->getLF() || this->EXP < enemy->getEXP())) {
-                UnitNode* current = this->unitList->getHead();
-                while (current) {
-                    int newQuantity = ceil(current->unit->getQuantity() * 0.9);
-                    current->unit->setQuantity(newQuantity); 
-
-                    if (current->unit->getQuantity() <= 0) {
-                        this->unitList->remove(current);
-                    }
-
-                    current = current->next;
-                }
-
+            // Lose - each units lost 10% its weight
                 UnitNode* current = this->unitList->getHead();
                 while (current) {
                     int newWeight = (int)ceil(current->unit->getWeight() * 0.9);
                     current->unit->setWeight(newWeight);
                 }
-            } else if ((this->LF < enemy->getLF() && this->EXP < enemy->getEXP())) {
-                UnitNode* current = this->unitList->getHead();
-                while (current) {
-                    int newQuantity = getNearestFibonacci(current->unit->getQuantity());
-                    current->unit->setQuantity(newQuantity);
-                    current = current->next;
-                }
 
-                this->LF = 0;
-                this->EXP = 0;
-
-                UnitNode* current = this->unitList->getHead();
-                while (current) {
-                    Vehicle* vehicle = dynamic_cast<Vehicle*>(current->unit);
-                    Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
-
-                    if (vehicle) {
-                        this->LF += vehicle->getAttackScore();
-                    } else if (infantry) {
-                        this->EXP += infantry->getAttackScore();
-                    }
-
-                    current = current->next;
-                }
-
-                if ((this->LF < enemy->getLF() || this->EXP < enemy->getEXP())) {
-                    UnitNode* current = this->unitList->getHead();
-                    while (current) {
-                        int newQuantity = ceil(current->unit->getQuantity() * 0.9);
-                        current->unit->setQuantity(newQuantity); 
-
-                        if (current->unit->getQuantity() <= 0) {
-                            this->unitList->remove(current);
-                        }
-
-                        current = current->next;
-                    }
-
-                    UnitNode* current = this->unitList->getHead();
-                    while (current) {
-                        int newWeight = (int)ceil(current->unit->getWeight() * 0.9);
-                        current->unit->setWeight(newWeight);
-                    }
-                }
-            }
+                // Recalculate indices
         }
 
-        this->LF = 0;
-        this->EXP = 0;
+        // Update Indices
 
-        UnitNode* current = this->unitList->getHead();
-        while (current) {
-            Vehicle* vehicle = dynamic_cast<Vehicle*>(current->unit);
-            Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
+        // this->LF = 0;
+        // this->EXP = 0;
 
-            if (vehicle) {
-                this->LF += vehicle->getAttackScore();
-            } else if (infantry) {
-                this->EXP += infantry->getAttackScore();
+        // UnitNode* current = this->unitList->getHead();
+        // while (current) {
+        //     Vehicle* vehicle = dynamic_cast<Vehicle*>(current->unit);
+        //     Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
+
+        //     if (vehicle) {
+        //         this->LF += vehicle->getAttackScore();
+        //     } else if (infantry) {
+        //         this->EXP += infantry->getAttackScore();
+        //     }
+
+        //     current = current->next;
+        // }
+    } else {
+        // Liberation Army has a boost of 1.3
+        this->LF = static_cast<int>(ceil(this->LF * 1.3));
+        this->EXP = static_cast<int>(ceil(this->EXP * 1.3));
+
+        // Case 1: If both LF and EXP of Liberation Army are not lower than enemy's, Liberation Army win
+        bool bothHigher = (this->LF >= enemy->getLF() && this->EXP >= enemy->getEXP());
+
+        // Case 2: If neither LF nor EXP of Liberation Army is lower than enemy's, need reinforcements - increase to the nearest Fibonacci number
+        bool bothLower = (this->LF < enemy->getLF() && this->EXP < enemy->getEXP());
+
+        // Case 3: If either LF or EXP of Liberation Army is lower than enemy's, each unit reduces 10% of its quantity
+        bool oneLower = ((this->LF < enemy->getLF() || this->EXP < enemy->getEXP()) && !bothLower);
+    
+        if (oneLower) {
+            // Case 2 - reduce 10% of each unit's quantity
+            UnitNode* current = this->unitList->getHead();
+            while (current) {
+                int newQuantity = static_cast<int>(ceil(current->unit->getQuantity() * 0.9));
+                current->unit->setQuantity(newQuantity); 
+
+                if (current->unit->getQuantity() <= 1) {
+                    this->unitList->remove(current);
+                }
+
+                current = current->next;
+            }
+        } else if (bothLower) {
+            // Case 2 - Reinforcements
+            UnitNode* current = this->unitList->getHead();
+            while (current) {
+                int newQuantity = getNearestFibonacci(current->unit->getQuantity());
+                current->unit->setQuantity(newQuantity);
+                current = current->next;
             }
 
-            current = current->next;
+            // this->LF = 0;
+            // this->EXP = 0;
+
+            // UnitNode* current = this->unitList->getHead();
+            // while (current) {
+            //     Vehicle* vehicle = dynamic_cast<Vehicle*>(current->unit);
+            //     Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
+
+            //     if (vehicle) {
+            //         this->LF += vehicle->getAttackScore();
+            //     } else if (infantry) {
+            //         this->EXP += infantry->getAttackScore();
+            //     }
+            
+            //     current = current->next;
+            // }
         }
     }
 }
+
 
 string LiberationArmy::str() const {
     return "LiberationArmy[name=" + this->name + ",LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + this->battleField->str() + "]";
@@ -640,7 +615,7 @@ UnitList::UnitList(int LF, int EXP) {
 }
 
 bool UnitList::insert(Unit *unit) {
-    if (vehicleCount + infantryCount >= capacity) {
+    if (vehicleCount + infantryCount >= this->capacity) {
         return false;
     }
 
@@ -700,6 +675,34 @@ bool UnitList::isContain(InfantryType infantryType) {
     }
 
     return false;
+}
+
+Vehicle* UnitList::getVehicle(VehicleType vehicleType) {
+    if (!this->head) return nullptr;
+
+    UnitNode* current = this->head;
+    while (current) {
+        Vehicle* vehicle = dynamic_cast<Vehicle*>(current->unit);
+        if (vehicle && vehicle->vehicleType == vehicleType) {
+            return vehicle;
+        }
+        current = current->next;
+    }
+    return nullptr;
+}
+
+Infantry* UnitList::getInfantry(InfantryType infantryType) {
+    if (!this->head) return nullptr;
+
+    UnitNode* current = this->head;
+    while (current) {
+        Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
+        if (infantry && infantry->infantryType == infantryType) {
+            return infantry;
+        }
+        current = current->next;
+    }
+    return nullptr;
 }
 
 string UnitList::str() const {
@@ -841,6 +844,24 @@ void UnitList::deleteInfantry(Infantry* infantry) {
         current = current->next;
     }
 }
+
+////////////////////////////// Class TerrainElement //////////////////////////////
+
+TerrainElement::TerrainElement() {}
+
+TerrainElement::~TerrainElement() {}
+
+////////////////////////////// Class Road //////////////////////////////
+
+Road::Road() : TerrainElement() {}
+
+Road::~Road() {}
+
+void Road::getEffect(Army* army) {}
+
+////////////////////////////// Class  //////////////////////////////
+
+
 
 ////////////////////////////// Class BattleField //////////////////////////////
 

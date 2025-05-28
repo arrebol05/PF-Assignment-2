@@ -198,15 +198,21 @@ public:
     bool isContain(VehicleType vehicleType);   // return true if it exists
     bool isContain(InfantryType infantryType); // return true if it exists
     string str() const;
+    
     // TODO
-
     UnitList(int LF, int EXP);
     ~UnitList();
-    UnitNode* getHead() const;
     void remove(UnitNode* node);
+
+    Vehicle* getVehicle(VehicleType vehicleType);
+    Infantry* getInfantry(InfantryType infantryType);
+
+    UnitNode* getHead() const;
     void setHead(UnitNode* node);
+
     void decreaseVehicleCount();
     void decreaseInfantryCount();
+
     void deleteUnit(Unit* unit);
     void deleteVehicle(Vehicle* vehicle);
     void deleteInfantry(Infantry* infantry);
