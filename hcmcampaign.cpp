@@ -182,12 +182,24 @@ int LiberationArmy::getNearestFibonacci(int number) {
 }
 
 void LiberationArmy::fight(Army* enemy, bool defense = false) {
+    // Attack case
     if (!defense) {
+        // Liberation Army got a boost
         this->LF *= 1.5;
         this->EXP *= 1.5;
 
+        /*
+        Get vectors of vehicles & infantries for handling.
+        To reduce calculation overhead, we will create the attack score vector for each list.
+        */
+
         vector<Vehicle*> vehicleUnits;
         vector<Infantry*> infantryUnits;
+        vector<int> vehicleScores, infantryScores;
+        // Setup to initialize min as the sum of list vehicles/ infantries
+        int minVehicleScore = 0;
+        int minInfantryScore = 0;
+        // Traverse from head to tail
         UnitNode* current = this->unitList->getHead();
         while (current) {
             Vehicle* vehicle = dynamic_cast<Vehicle*>(current->unit);
@@ -195,58 +207,78 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
 
             if (vehicle) {
                 vehicleUnits.push_back(vehicle);
-            } else if (infantry) {
+                int score = vehicle->getAttackScore();
+                vehicleScores.push_back(score);
+                minVehicleScore += score;
+            } else {
                 infantryUnits.push_back(infantry);
+                int score = infantry->getAttackScore();
+                infantryScores.push_back(infantry->getAttackScore());
+                minInfantryScore += score;
             }
 
             current = current->next;
         }
 
+        // Initialization for combination
         vector<Vehicle*> bestVehicleCombination;
         vector<Infantry*> bestInfantryCombination;
-        int minVehicleScore = INT_MAX;
-        int minInfantryScore = INT_MAX;
-        bool foundVehicleCombination = false;
-        bool foundInfantryCombination = false;
 
-        int vehicleCount = vehicleUnits.size();
-        for (int mask = 1; mask < (1 << vehicleCount); mask++) {
-            vector<Vehicle*> combination;
-            int totalScore = 0;
+        bool foundVehicleCombination = minVehicleScore >= enemy->getLF(),
+             foundInfantryCombination = minInfantryScore >= enemy->getEXP();
 
-            for (int i = 0; i < vehicleCount; i++) {
-                if (mask & (1 << i)) {
-                    combination.push_back(vehicleUnits[i]);
-                    totalScore += vehicleUnits[i]->getAttackScore();
+        // We only loop and get in case of there exists a combination
+        if (foundVehicleCombination) {
+            int vehicleCount = vehicleUnits.size();
+            // Bitmask technique to get all combination
+            for (int mask = 1; mask < (1 << vehicleCount); mask++)
+            {
+                vector<Vehicle *> combination;
+                int totalScore = 0;
+
+                for (int i = 0; i < vehicleCount; i++)
+                {
+                    if (mask & (1 << i))
+                    {
+                        combination.push_back(vehicleUnits[i]);
+                        totalScore += vehicleScores[i];
+                    }
+                }
+
+                if (totalScore > enemy->getEXP() && totalScore < minVehicleScore)
+                {
+                    minVehicleScore = totalScore;
+                    bestVehicleCombination = combination;
                 }
             }
-
-            if (totalScore > enemy->getEXP() && totalScore < minVehicleScore) {
-                minVehicleScore = totalScore;
-                bestVehicleCombination = combination;
-                foundVehicleCombination = true;
-            }
         }
+        
+        if (foundInfantryCombination) {
+            int infantryCount = infantryUnits.size();
+            for (int mask = 1; mask < (1 << infantryCount); mask++)
+            {
+                vector<Infantry *> combination;
+                int totalScore = 0;
 
-        int infantryCount = infantryUnits.size();
-        for (int mask = 1; mask < (1 << infantryCount); mask++) {
-            vector<Infantry*> combination;
-            int totalScore = 0;
+                for (int i = 0; i < infantryCount; i++)
+                {
+                    if (mask & (1 << i))
+                    {
+                        combination.push_back(infantryUnits[i]);
+                        totalScore += infantryScores[i];
+                    }
+                }
 
-            for (int i = 0; i < infantryCount; i++) {
-                if (mask & (1 << i)) {
-                    combination.push_back(infantryUnits[i]);
-                    totalScore += infantryUnits[i]->getAttackScore();
+                if (totalScore > enemy->getEXP() && totalScore < minInfantryScore)
+                {
+                    minInfantryScore = totalScore;
+                    bestInfantryCombination = combination;
                 }
             }
-
-            if (totalScore > enemy->getEXP() && totalScore < minInfantryScore) {
-                minInfantryScore = totalScore;
-                bestInfantryCombination = combination;
-                foundInfantryCombination = true;
-            }
-        }
-
+        }        
+        
+        // Condition check for fight result
+        // Case found both combination: Will definitely win
         if (foundVehicleCombination && foundInfantryCombination) {
             for (Vehicle* unit : bestVehicleCombination) {
                 UnitNode* current = this->unitList->getHead();
