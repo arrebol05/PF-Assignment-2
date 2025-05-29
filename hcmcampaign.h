@@ -64,10 +64,10 @@ enum InfantryType
     REGULARINFANTRY
 };
 
-
 class Army
 {
-friend class UnitList;
+    friend class UnitList;
+
 protected:
     int LF, EXP;
     string name;
@@ -80,42 +80,39 @@ public:
     virtual string str() const = 0;
 
     // TODO: Helper
-    UnitList* getUnitList() const;
+    UnitList *getUnitList() const;
     int getLF() const;
     int getEXP() const;
     void setLF(int LF);
     void setEXP(int EXP);
     void recalcIndex();
 
-<<<<<<< HEAD
-    bool isSpecialNumber(int number);
-=======
-    // Helper
-    bool isSpecialNumber(int);
->>>>>>> 27e4d98ff4a767b2d7f47794de5ea3a1cc642a54
 };
 
 // TODO: Class LiberationArmy
-class LiberationArmy : public Army {
-friend class UnitList;
-private: 
+class LiberationArmy : public Army
+{
+    friend class UnitList;
+
+private:
     int getNearestFibonacci(int number);
 
 public:
-    LiberationArmy(Unit** unitArray, int size, string name, BattleField* battleField);
-    void fight(Army* enemy, bool defense = false) override;
+    LiberationArmy(Unit **unitArray, int size, string name, BattleField *battleField);
+    void fight(Army *enemy, bool defense = false) override;
     string str() const override;
 };
 
 // TODO: Class ARVN
-class ARVN : public Army {
-friend class UnitList;
+class ARVN : public Army
+{
+    friend class UnitList;
+
 public:
-    ARVN(Unit** unitArray, int size, string name, BattleField* BattleField);
-    void fight(Army* enemy, bool defense = false) override;
+    ARVN(Unit **unitArray, int size, string name, BattleField *BattleField);
+    void fight(Army *enemy, bool defense = false) override;
     string str() const override;
 };
-
 
 class Position
 {
@@ -131,7 +128,6 @@ public:
     void setCol(int c);
     string str() const; // Example: returns "(1,15)"
 };
-
 
 class Unit
 {
@@ -151,12 +147,13 @@ public:
     int getWeight() const;
     void setQuantity(int quantity);
     void setWeight(int weight);
-    void setAttackScore(int score);
 };
 
 // TODO: Class Vehicle
-class Vehicle : public Unit {
-friend class UnitList;
+class Vehicle : public Unit
+{
+    friend class UnitList;
+
 private:
     VehicleType vehicleType;
 
@@ -170,8 +167,10 @@ public:
 };
 
 // TODO: Class Infantry
-class Infantry : public Unit {
-friend class UnitList;
+class Infantry : public Unit
+{
+    friend class UnitList;
+
 private:
     InfantryType infantryType;
     int calPersonalNumber(int number);
@@ -185,11 +184,11 @@ public:
     InfantryType getInfantryType() const;
 };
 
-
 // TODO: Struct UnitNode
-struct UnitNode {
-    Unit* unit;
-    UnitNode* next;
+struct UnitNode
+{
+    Unit *unit;
+    UnitNode *next;
 };
 
 class UnitList
@@ -198,9 +197,11 @@ private:
     int capacity;
     // TODO
 
-    UnitNode* head;
+    UnitNode *head;
     int vehicleCount;
     int infantryCount;
+
+    bool isSpecialNumber(int number);
 
 public:
     UnitList(int capacity);
@@ -208,26 +209,24 @@ public:
     bool isContain(VehicleType vehicleType);   // return true if it exists
     bool isContain(InfantryType infantryType); // return true if it exists
     string str() const;
-    
+
     // TODO
-    ~UnitList(); 
-    void remove(UnitNode* node);
-    Unit * pop_front(); 
+    ~UnitList();
+    void remove(UnitNode *node);
+    Unit *pop_front();
 
-    Unit* pop_front();
+    Vehicle *getVehicle(VehicleType vehicleType);
+    Infantry *getInfantry(InfantryType infantryType);
 
-    Vehicle* getVehicle(VehicleType vehicleType);
-    Infantry* getInfantry(InfantryType infantryType);
+    UnitNode *getHead() const;
 
-    UnitNode* getHead() const;
-
-    void deleteVehicle(Vehicle* vehicle);
-    void deleteInfantry(Infantry* infantry);
+    void deleteVehicle(Vehicle *vehicle);
+    void deleteInfantry(Infantry *infantry);
 };
 
 class TerrainElement
 {
-private: 
+private:
     Position pos;
 
 public:
@@ -236,12 +235,13 @@ public:
     virtual void getEffect(Army *army) = 0;
 
     // TODO: Helper method
-    double calcDistance(const Position& pos1, const Position& pos2);
+    double calcDistance(const Position &pos1, const Position &pos2);
     Position getPosition() const;
 };
 
 // TODO: Class Road
-class Road : public TerrainElement {
+class Road : public TerrainElement
+{
 private:
     Position pos;
 
@@ -252,8 +252,9 @@ public:
 };
 
 // TODO: Class Mountain
-class Mountain : public TerrainElement {
-private: 
+class Mountain : public TerrainElement
+{
+private:
     Position pos;
 
 public:
@@ -263,8 +264,9 @@ public:
 };
 
 // TODO: Class River
-class River : public TerrainElement {
-private: 
+class River : public TerrainElement
+{
+private:
     Position pos;
 
 public:
@@ -274,8 +276,9 @@ public:
 };
 
 // TODO: Class Urban
-class Urban : public TerrainElement {
-private: 
+class Urban : public TerrainElement
+{
+private:
     Position pos;
 
 public:
@@ -285,8 +288,9 @@ public:
 };
 
 // TODO: Class Fortification
-class Fortification : public TerrainElement {
-private: 
+class Fortification : public TerrainElement
+{
+private:
     Position pos;
 
 public:
@@ -296,8 +300,9 @@ public:
 };
 
 // TODO: Class SpecialZone
-class SpecialZone : public TerrainElement {
-private: 
+class SpecialZone : public TerrainElement
+{
+private:
     Position pos;
 
 public:
@@ -305,7 +310,6 @@ public:
     ~SpecialZone();
     void getEffect(Army *army) override;
 };
-
 
 class BattleField
 {
