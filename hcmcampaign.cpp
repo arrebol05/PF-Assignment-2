@@ -74,6 +74,7 @@ int Infantry::calPersonalNumber(int number)
 
     return sum;
 }
+
 Infantry::Infantry(int quantity, int weight, const Position pos, InfantryType infantryType) : Unit(quantity, weight, pos)
 {
     this->infantryType = infantryType;
@@ -145,6 +146,8 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
 
     for (int i = 0; i < size; i++)
         this->unitList->insert(unitArray[i]);
+
+    calScore();
 }
 
 UnitList *Army::getUnitList() const
@@ -196,6 +199,33 @@ void Army::recalcIndex()
     }
 }
 
+void Army::removeWeakUnits()
+{
+    UnitNode *current = this->unitList->getHead();
+
+    while (current)
+    {
+        if (current->unit->getAttackScore() <= 5)
+            unitList->remove(current);
+
+        current = current->next;
+    }
+
+    recalcIndex();
+}
+
+void Army::calScore() {
+    scores = {};
+    UnitNode *current = this->unitList->getHead();
+
+    while (current)
+    {
+        scores.push_back(current->unit->getAttackScore());
+
+        current = current->next;
+    }
+}
+
 ////////////////////////////// Class LiberationArmy //////////////////////////////
 LiberationArmy::LiberationArmy(Unit **unitArray, int size, string name, BattleField *battleField) : Army(unitArray, size, name, battleField) {}
 
@@ -233,7 +263,6 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
 
         vector<Vehicle *> vehicleUnits;
         vector<Infantry *> infantryUnits;
-        vector<int> vehicleScores, infantryScores;
 
         // Setup to initialize min as the sum of list vehicles/ infantries
         int minVehicleScore = 0;
@@ -250,14 +279,12 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
             {
                 vehicleUnits.push_back(vehicle);
                 int score = vehicle->getAttackScore();
-                vehicleScores.push_back(score);
                 minVehicleScore += score;
             }
             else
             {
                 infantryUnits.push_back(infantry);
                 int score = infantry->getAttackScore();
-                infantryScores.push_back(infantry->getAttackScore());
                 minInfantryScore += score;
             }
 
@@ -287,7 +314,7 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
                     if (mask & (1 << i))
                     {
                         combination.push_back(vehicleUnits[i]);
-                        totalScore += vehicleScores[i];
+                        totalScore += scores[i];
                     }
                 }
 
@@ -301,7 +328,7 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
 
         if (foundInfantryCombination)
         {
-            int infantryCount = infantryUnits.size();
+            int infantryCount = infantryUnits.size(), vehicleCount = vehicleUnits.size();
             for (int mask = 1; mask < (1 << infantryCount); mask++)
             {
                 vector<Infantry *> combination;
@@ -312,7 +339,7 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
                     if (mask & (1 << i))
                     {
                         combination.push_back(infantryUnits[i]);
-                        totalScore += infantryScores[i];
+                        totalScore += scores[i + vehicleCount];
                     }
                 }
 
@@ -401,31 +428,6 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
 
                 Vehicle *enemyVehicle = dynamic_cast<Vehicle *>(enemyUnit);
                 Infantry *enemyInfantry = dynamic_cast<Infantry *>(enemyUnit);
-
-                // Case 1: Check if unit exists in current unitList
-                // TODO: Update the quantity in Lib Army and delete enemy unit
-                if (enemyVehicle)
-                {
-                    Unit *unit = this->unitList->getVehicle(enemyVehicle->getVehicleType());
-                    if (unit)
-                    {
-                        unitExists = true;
-                        unit->setQuantity(unit->getQuantity() + enemyVehicle->getQuantity());
-                        delete enemyVehicle;
-                        enemyVehicle = nullptr;
-                    }
-                }
-                else
-                {
-                    Unit *unit = this->unitList->getInfantry(enemyInfantry->getInfantryType());
-                    if (unit)
-                    {
-                        unitExists = true;
-                        unit->setQuantity(unit->getQuantity() + enemyInfantry->getQuantity());
-                        delete enemyInfantry;
-                        enemyInfantry = nullptr;
-                    }
-                }
 
                 // Case 2 & 3: The unit does not exist. Attempting to insert
                 if (!unitExists)
@@ -615,31 +617,46 @@ bool UnitList::insert(Unit *unit)
     Vehicle *vehicle = dynamic_cast<Vehicle *>(unit);
     Infantry *infantry = dynamic_cast<Infantry *>(unit);
 
-    UnitNode *newNode = new UnitNode;
+    UnitNode *newNode = new UnitNode();
     newNode->unit = unit;
     newNode->next = nullptr;
 
     if (vehicle)
     {
-        if (!this->head)
-        {
-            this->head = newNode;
+        Unit* exist = getVehicle(vehicle->getVehicleType());
+        if (exist) {
+            exist->setQuantity(exist->getQuantity() + vehicle->getQuantity());
+            delete unit;
+            unit = nullptr;
         }
-        else
-        {
-            UnitNode *current = this->head;
-            while (current)
+        else {
+            if (!this->head)
             {
-                current = current->next;
+                this->head = newNode;
             }
-            current->next = newNode;
+            else
+            {
+                UnitNode *current = this->head;
+                while (current->next)
+                    current = current->next;
+                current->next = newNode;
+            }
+            vehicleCount++;
         }
     }
     else if (infantry)
     {
-        newNode->next = this->head;
-        this->head = newNode;
-        this->infantryCount++;
+        Unit *exist = getInfantry(infantry->getInfantryType());
+        if (exist) {
+            exist->setQuantity(exist->getQuantity() + infantry->getQuantity());
+            delete unit;
+            unit = nullptr;
+        }
+        else {
+            newNode->next = this->head;
+            this->head = newNode;
+            this->infantryCount++;
+        }
     }
 
     return true;
@@ -811,13 +828,9 @@ void UnitList::deleteVehicle(Vehicle *vehicle)
         {
             // Remove the node from the list
             if (prev)
-            {
                 prev->next = current->next;
-            }
             else
-            {
                 this->head = current->next;
-            }
 
             // Update vehicleCount
             this->vehicleCount--;
@@ -1334,7 +1347,7 @@ Unit* Configuration::createUnit(const string &str) {
     else return nullptr; // Unknown unit type
 }
 
-Configuration::Configuration(const string &filepath) {
+Configuration::Configuration(const string &filepath = nullptr) {
     this->liberationUnitCount = 0;
     this->arvnUnitCount = 0;
     this->eventCode = 0;
@@ -1594,43 +1607,27 @@ HCMCampaign::HCMCampaign(const string &config_file_path) {
 
 void HCMCampaign::run() {
     // Apply terrain effects
-    this->battleField->terrainEffect(this->liberationArmy);
-    this->battleField->terrainEffect(this->arvn);
+    battleField->terrainEffect(liberationArmy);
+    battleField->terrainEffect(arvn);
 
     // Execute battle based on event code
-    if (this->config->eventCode < 75) {
+    if (config->eventCode < 75) {
         // Liberation Army attacks
-        this->liberationArmy->fight(this->arvn, false);
+        liberationArmy->fight(arvn, false);
+        arvn->fight(liberationArmy, true);
+        
     } else {
         // ARVN attacks
-        this->arvn->fight(this->liberationArmy, false);
+        arvn->fight(liberationArmy, false);
+        liberationArmy->fight(arvn, true);
         // Liberation Army counterattacks
-        this->liberationArmy->fight(this->arvn, false);
+        liberationArmy->fight(arvn, false);
+        arvn->fight(liberationArmy, true);
     }
 
     // Remove weak units from both enemies
-    removeWeakUnits(this->liberationArmy);
-    removeWeakUnits(this->arvn);
-}
-
-void HCMCampaign::removeWeakUnits(Army* army) {
-    UnitList* list = army->getUnitList();
-    UnitNode* current = list->getHead();
-    vector<UnitNode*> toRemove;
-
-    while (current) {
-        if (current->unit->getAttackScore() <= 5) {
-            toRemove.push_back(current);
-        }
-        
-        current = current->next;
-    }
-
-    for (UnitNode* node : toRemove) {
-        list->remove(node);
-    }
-
-    army->recalcIndex();
+    liberationArmy->removeWeakUnits();
+    arvn->removeWeakUnits();
 }
 
 string HCMCampaign::printResult() {

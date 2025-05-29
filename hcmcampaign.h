@@ -74,6 +74,9 @@ protected:
     UnitList *unitList;
     BattleField *battleField;
 
+    // Helper
+    vector<int> scores;
+
 public:
     Army(Unit **unitArray, int size, string name, BattleField *battleField);
     virtual void fight(Army *enemy, bool defense = false) = 0;
@@ -86,7 +89,8 @@ public:
     void setLF(int LF);
     void setEXP(int EXP);
     void recalcIndex();
-
+    void removeWeakUnits();
+    void calScore();
 };
 
 // TODO: Class LiberationArmy
@@ -200,8 +204,6 @@ private:
     UnitNode *head;
     int vehicleCount;
     int infantryCount;
-
-    bool isSpecialNumber(int number);
 
 public:
     UnitList(int capacity);
