@@ -86,6 +86,9 @@ public:
     void setLF(int LF);
     void setEXP(int EXP);
     void recalcIndex();
+
+    // Helper
+    bool isSpecialNumber(int);
 };
 
 // TODO: Class LiberationArmy
@@ -204,25 +207,18 @@ public:
     string str() const;
     
     // TODO
-    UnitList(int LF, int EXP);
-    ~UnitList();
-    void clear();
+    ~UnitList(); 
     void remove(UnitNode* node);
+    Unit * pop_front(); 
 
     Vehicle* getVehicle(VehicleType vehicleType);
     Infantry* getInfantry(InfantryType infantryType);
 
     UnitNode* getHead() const;
-    void setHead(UnitNode* node);
 
-    void decreaseVehicleCount();
-    void decreaseInfantryCount();
-
-    void deleteUnit(Unit* unit);
     void deleteVehicle(Vehicle* vehicle);
     void deleteInfantry(Infantry* infantry);
 };
-
 
 class TerrainElement
 {
