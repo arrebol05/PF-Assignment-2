@@ -4,36 +4,6 @@
 /// STUDENT'S ANSWER BEGINS HERE
 ////////////////////////////////////////////////////////////////////////
 
-////////////////////////////// Class Position //////////////////////////////
-Position::Position(int r = 0, int c = 0) {
-    this->r = r;
-    this->c = c;
-}
-
-Position::Position(const string & str_pos) {
-    sscanf(str_pos.c_str(), "(%d,%d)", &this->r, &this->c);
-}
-
-int Position::getRow() const {
-    return this->r;
-}
-
-int Position::getCol() const {
-    return this->c;
-}
-
-void Position::setRow(int r) {
-    this->r = r;
-}
-
-void Position::setCol(int c) {
-    this->c = c;
-}
-
-string Position::str() const {
-    return "(" + to_string(this->r) + "," + to_string(this->c) + ")";
-}
-
 ////////////////////////////// Class Unit //////////////////////////////
 Unit::Unit(int quantity, int weight, const Position pos) {
     this->quantity = quantity;
@@ -143,12 +113,14 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField) {
             this->EXP += unitArray[i]->getAttackScore();
         }
     }
+    
+    if (isSpecialNumber(LF + EXP))
+        this->unitList = new UnitList(12);
+    else
+        this->unitList = new UnitList(8);
 
-    this->unitList = new UnitList(this->LF, this->EXP);
-
-    for (int i = 0; i < size; i++) {
-        this->unitList->insert(dynamic_cast<Unit*>(unitArray[i]));
-    }
+    for (int i = 0; i < size; i++)
+        this->unitList->insert(unitArray[i]);
 }
 
 UnitList* Army::getUnitList() const {
@@ -298,18 +270,38 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
                 }
             }
         }        
+
+        bool win = false;
         
         // Condition check for fight result
-        // Case found both combination: Will definitely win
-        if (foundVehicleCombination && foundInfantryCombination) {
+        switch (foundVehicleCombination << 1 + foundInfantryCombination) {
+            // Case found both combination: Will definitely win
+            case 3:
+                win = true;
+                break;
+            // Case found Vehicle combination: Check if win
+            case 2:
+                if (EXP > enemy->getEXP()) {
+                    win = true;
+                    bestInfantryCombination = infantryUnits;
+                }
+            // Case found Infantry combination: Check if win
+            case 1:
+                if (LF > enemy->getLF())
+                {
+                    win = true;
+                    bestVehicleCombination = vehicleUnits;
+                }
+                break;
+            // Default lost, no need to do anything
+        }
+        
+        if (win) {
             // Delete all the combinations, add enemy
-            for (Vehicle* unit : bestVehicleCombination) {
+            for (Vehicle* unit : bestVehicleCombination)
                 this->unitList->deleteVehicle(unit);
-            }
-
-            for (Infantry* unit : bestInfantryCombination) {
+            for (Infantry* unit : bestInfantryCombination)
                 this->unitList->deleteInfantry(unit);
-            }
 
             /*
                 Repurpose enemy's units - 3 cases:
@@ -325,27 +317,25 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
                 Add unit* to additional vector to put back into enemy later
             */
 
-            // Create vector of all units in current unitList
-            vector<Unit*> currentUnits;
-            UnitNode* current = this->unitList->getHead();
-            while (current) {
-                currentUnits.push_back(current->unit);
-                current = current->next;
-            }
-
             // Pop all units from enemy into a temporary vector 
             vector<Unit*> enemyUnits;
-            UnitNode* temp = enemy->getUnitList()->getHead();
-            while (temp) {
-                enemyUnits.push_back(temp->unit);
-                temp = temp->next;
+            Unit* unit = enemy->getUnitList()->pop_front();
+            while (unit) {
+                enemyUnits.push_back(unit);
+                Unit *unit = enemy->getUnitList()->pop_front();
             }
 
-            // Clear enemy's unit list
-            enemy->getUnitList()->clear();
-
             // Vector to store units that couldn't be inserted (Case 3)
-            vector<Unit*> uninsertUnits;
+            /* Some note on case 3 issue
+            In UnitList implementation, we always insert vehicle at the end, and infantry at the start
+            Since we extract with pop_front, we preserve the order of UnitList
+            But if use insert, infantry order will messed up
+            For example, we have 0, 1, 2, 3 acting as infantry in UnitList
+            When pushing them with insert, they will be inserted in order 0 -> 1 -> 2 -> 3
+            Therefore the final result is 3, 2, 1, 0 #BUG
+            In order to resolve it, we need to seperate infantries and vehicles
+            */
+            vector<Unit*> leftoverVehicle, leftoverInfantry;
 
             // Process each enemy unit
             for (Unit* enemyUnit : enemyUnits) {
@@ -355,252 +345,107 @@ void LiberationArmy::fight(Army* enemy, bool defense = false) {
                 Infantry* enemyInfantry = dynamic_cast<Infantry*>(enemyUnit);
 
                 // Case 1: Check if unit exists in current unitList
-                for (Unit* existingUnit : currentUnits) {
-                    if (enemyVehicle) {
-                        Vehicle* existingVehicle = dynamic_cast<Vehicle*>(existingUnit);
-
-                        if (existingVehicle && existingVehicle->getVehicleType() == enemyVehicle->getVehicleType()) {
-                            // Update quantity for existing vehicle
-                            existingVehicle->setQuantity(existingVehicle->getQuantity() + enemyVehicle->getQuantity());
-
-                            // Delete the enemy unit pointer
-                            delete enemyUnit;
-                            enemyUnit = nullptr;
-
-                            unitExists = true;
-                            break;
-                        }
-                    } else {
-                        Infantry* existingInfantry = dynamic_cast<Infantry*>(existingUnit);
-
-                        if (existingInfantry && existingInfantry->getInfantryType() == enemyInfantry->getInfantryType()) {
-                            // Update quantity for exiting infantry
-                            existingInfantry->setQuantity(existingInfantry->getQuantity() + enemyInfantry->getQuantity());
-
-                            // Delete the enemy unit pointer
-                            delete enemyUnit;
-                            enemyUnit = nullptr;
-
-                            unitExists = true;
-                            break;
-                        }
+                // TODO: Update the quantity in Lib Army and delete enemy unit
+                if (enemyVehicle) {
+                    Unit* unit = this->unitList->getVehicle(enemyVehicle->getVehicleType());
+                    if (unit) {
+                        unitExists = true;
+                        unit->setQuantity(unit->getQuantity() + enemyVehicle->getQuantity());
+                        delete enemyVehicle;
+                        enemyVehicle = nullptr;
                     }
-
-                    // Case 2 + 3: Unit doesn't exist, try to insert
-                    if (!unitExists && enemyUnit) {
-                        bool insertSuccess = this->unitList->insert(enemyUnit);
-
-                        if (insertSuccess) {
-                            // Case 2: Successfully inserted
-                            // Unit is now managed by unitList, don't delete
-                        } else {
-                            // Case 3: Insert failed (no capacity)
-                            // Add to uninserted vector to put back into enemy
-                            uninsertUnits.push_back(enemyUnit);
-                        }
+                }
+                else {
+                    Unit *unit = this->unitList->getInfantry(enemyInfantry->getInfantryType());
+                    if (unit)
+                    {
+                        unitExists = true;
+                        unit->setQuantity(unit->getQuantity() + enemyInfantry->getQuantity());
+                        delete enemyInfantry;
+                        enemyInfantry = nullptr;
                     }
+                }
 
-                    // Put uninserted units back into enemy
-                    for (Unit* uninsertUnit : uninsertUnits) {
-                        enemy->getUnitList()->insert(uninsertUnit);
-                    }
-
-                    // Delete enemy if it has no unit
-                    if (!enemy->getUnitList()->getHead()) {
-                        delete enemy;
-                        enemy = nullptr;
+                // Case 2 & 3: The unit does not exist. Attempting to insert
+                if (!unitExists) {
+                    if (!this->unitList->insert(enemyUnit)) {
+                        // Insert does not success
+                        if (enemyVehicle) 
+                            leftoverVehicle.push_back(enemyVehicle);
+                        else
+                            leftoverInfantry.push_back(enemyInfantry);
                     }
                 }
             }
 
-            // Update index 
-            recalcIndex();
-
-        // End case found both two combinations
-        } else if (foundVehicleCombination || foundInfantryCombination) {
-            // Case found one of the two combinations - stalements
-            bool canWin = false;
-
-            if (foundVehicleCombination && !foundInfantryCombination && this->LF > enemy->getLF()) {
-                canWin = true;
-                for (Infantry* unit : bestInfantryCombination) {
-                    // Delete infantry combinations
-                    this->unitList->deleteInfantry(unit);
-                }
-
-                // Delete all vehicle units
-            } else if (!foundVehicleCombination && foundInfantryCombination && this->EXP > enemy->getEXP()) {
-                canWin = true;
-                for (Vehicle* unit : bestVehicleCombination) {
-                    // Delete vehicle combinations
-                    this->unitList->deleteVehicle(unit);
-                }
-
-                // Delete all infantry units
-            }
-
-            if (canWin) {
-                // Win - repurpose enemy's units
-
-                vector<Unit*> currentUnits;
-                UnitNode* current = this->unitList->getHead();
-                while (current) {
-                    currentUnits.push_back(current->unit);
-                    current = current->next;
-                }
- 
-                vector<Unit*> enemyUnits;
-                UnitNode* temp = enemy->getUnitList()->getHead();
-                while (temp) {
-                    enemyUnits.push_back(temp->unit);
-                    temp = temp->next;
-                }
-                enemy->getUnitList()->clear();
-
-                vector<Unit*> uninsertUnits;
-
-                for (Unit* enemyUnit : enemyUnits) {
-                    bool unitExists = false;
-
-                    Vehicle* enemyVehicle = dynamic_cast<Vehicle*>(enemyUnit);
-                    Infantry* enemyInfantry = dynamic_cast<Infantry*>(enemyUnit);
-
-                    // Case 1: Check if unit exists in current unitList
-                    for (Unit* existingUnit : currentUnits) {
-                        if (enemyVehicle) {
-                            Vehicle* existingVehicle = dynamic_cast<Vehicle*>(existingUnit);
-
-                            if (existingVehicle && existingVehicle->getVehicleType() == enemyVehicle->getVehicleType()) {
-                                existingVehicle->setQuantity(existingVehicle->getQuantity() + enemyVehicle->getQuantity());
-
-                                delete enemyUnit;
-                                enemyUnit = nullptr;
-
-                                unitExists = true;
-                                break;
-                            }
-                        } else {
-                            Infantry* existingInfantry = dynamic_cast<Infantry*>(existingUnit);
-
-                            if (existingInfantry && existingInfantry->getInfantryType() == enemyInfantry->getInfantryType()) {
-                                existingInfantry->setQuantity(existingInfantry->getQuantity() + enemyInfantry->getQuantity());
-
-                                delete enemyUnit;
-                                enemyUnit = nullptr;
-
-                                unitExists = true;
-                                break;
-                            }
-                        }
-
-                        // Case 2 + 3: Unit doesn't exist, try to insert
-                        if (!unitExists && enemyUnit) {
-                            bool insertSuccess = this->unitList->insert(enemyUnit);
-
-                            if (insertSuccess) {
-                            } else {
-                                uninsertUnits.push_back(enemyUnit);
-                            }
-                        }
-
-                        for (Unit* uninsertUnit : uninsertUnits) {
-                            enemy->getUnitList()->insert(uninsertUnit);
-                        }
-
-                        if (!enemy->getUnitList()->getHead()) {
-                            delete enemy;
-                            enemy = nullptr;
-                        }
-                    }
-                }
-
-                    // Update index
-                    recalcIndex();
-
-            } else {
-                // Lose - each units lost 10% its weight
-                UnitNode* current = this->unitList->getHead();
-                while (current) {
-                    int newWeight = (int)ceil(current->unit->getWeight() * 0.9);
-                    current->unit->setWeight(newWeight);
-                }
-
-                // Recalculate index
-                recalcIndex();
-            }
-
-        } else {
-            // Case found nothing
+            // Resolve leftover units
+            // Infantries will be inserted in reversed order
+            for (auto it = leftoverInfantry.rbegin(); it != leftoverInfantry.rend(); ++it)
+                enemy->getUnitList()->insert(*it);
+            // Vehicle just chilling
+            for (auto unit : leftoverVehicle)
+                enemy->getUnitList()->insert(unit);
+        }
+        else {
             // Lose - each units lost 10% its weight
             UnitNode* current = this->unitList->getHead();
-            while (current) {
-                int newWeight = (int)ceil(current->unit->getWeight() * 0.9);
-                current->unit->setWeight(newWeight);
-            }
+            while (current)
+                current->unit->setWeight(ceil(current->unit->getWeight() * 0.9));
 
-            // Recalculate index
-            recalcIndex();
         }
+
+        // Update index - This debunk the fight start effect, so no need to worry
+        recalcIndex();
 
     } else {
     // Defense case
 
         // Liberation Army has a boost of 1.3
-        this->LF = static_cast<int>(ceil(this->LF * 1.3));
-        this->EXP = static_cast<int>(ceil(this->EXP * 1.3));
+        this->LF = ceil(this->LF * 1.3);
+        this->EXP = ceil(this->EXP * 1.3);
 
-        // Case 1: If both LF and EXP of Liberation Army are not lower than enemy's, Liberation Army win - do nothing
-        // Case 2: If neither LF nor EXP of Liberation Army is lower than enemy's, need reinforcements - increase to the nearest Fibonacci number
-        bool bothLower = (this->LF < enemy->getLF() && this->EXP < enemy->getEXP());
+        // We loop till the fight end
+        bool done = false;
+        while (!done) {
+            done = true;
+            // Case 1: If both LF and EXP of Liberation Army are not lower than enemy's, Liberation Army win - do nothing
+            // Case 2: If neither LF nor EXP of Liberation Army is lower than enemy's, need reinforcements - increase to the nearest Fibonacci number
+            bool bothLower = (this->LF < enemy->getLF() && this->EXP < enemy->getEXP());
 
-        // Case 3: If either LF or EXP of Liberation Army is lower than enemy's, each unit reduces 10% of its quantity
-        bool oneLower = ((this->LF < enemy->getLF() || this->EXP < enemy->getEXP()) && !bothLower);
-    
-        while (bothLower) {
-            // Case 2 - Reinforcements
-            UnitNode* current = this->unitList->getHead();
-            while (current) {
-                int newQuantity = getNearestFibonacci(current->unit->getQuantity());
-                current->unit->setQuantity(newQuantity);
-                current = current->next;
-            }
+            // Case 3: If either LF or EXP of Liberation Army is lower than enemy's, each unit reduces 10% of its quantity
+            bool oneLower = (this->LF < enemy->getLF()) ^ (this->EXP < enemy->getEXP());
 
-            // Update Indices
-            recalcIndex();
+            // Reduction of each unit's quantity
+            if (oneLower)
+            {
+                UnitNode *current = this->unitList->getHead();
+                while (current)
+                {
+                    current->unit->setQuantity(ceil(current->unit->getQuantity() * 0.9));
 
-            // Case 3 - Reduction of each unit's quantity
-            if (oneLower) {
-                UnitNode* current = this->unitList->getHead();
-                while (current) {
-                    int newQuantity = static_cast<int>(ceil(current->unit->getQuantity() * 0.9));
-                    current->unit->setQuantity(newQuantity); 
-
-                    if (current->unit->getQuantity() <= 1) {
+                    if (current->unit->getQuantity() <= 1)
+                    {
                         this->unitList->remove(current);
                     }
 
                     current = current->next;
                 }
             }
-        }
 
-        // Case 3 - Reduction of each unit's quantity
-        if (oneLower) {
-            UnitNode* current = this->unitList->getHead();
-            while (current) {
-                int newQuantity = static_cast<int>(ceil(current->unit->getQuantity() * 0.9));
-                current->unit->setQuantity(newQuantity); 
-
-                if (current->unit->getQuantity() <= 1) {
-                    this->unitList->remove(current);
+            // Call reinforcements
+            if (bothLower) {
+                UnitNode *current = this->unitList->getHead();
+                while (current)
+                {
+                    current->unit->setQuantity(getNearestFibonacci(current->unit->getQuantity()));
+                    current = current->next;
                 }
-
-                current = current->next;
+                done = false;
             }
-        }
 
-        // Update index
-        recalcIndex();        
+            // Update index
+            recalcIndex();
+        }     
     }
 }
 
@@ -613,55 +458,41 @@ string LiberationArmy::str() const {
 ARVN::ARVN(Unit** unitArray, int size, string name, BattleField* battleField) : Army(unitArray, size, name, battleField) {}
 
 void ARVN::fight(Army* fight, bool defense = false) {
+    // Attack
     if (!defense) {
-        // LF and EXP still unchange
+        // LF and EXP unchange
 
-        UnitNode* current = this->unitList->getHead();
-        UnitNode* prev = nullptr;
+        UnitNode *current = this->unitList->getHead();
+        while (current)
+        {
+            current->unit->setQuantity(ceil(current->unit->getQuantity() * 0.9));
 
-        while (current) {
-            int newQuantity = (int)ceil(current->unit->getQuantity() * 0.8);
-            current->unit->setQuantity(newQuantity);
-
-            if (current->unit->getQuantity() <= 1) {
-                if (prev) {
-                    prev->next = current->next;
-                } else {
-                    this->unitList->setHead(current->next);
-                }
-
-                Vehicle* vehicle = dynamic_cast<Vehicle*>(current->unit);
-                Infantry* infantry = dynamic_cast<Infantry*>(current->unit);
-
-                if (vehicle) {
-                    this->unitList->decreaseVehicleCount();
-                } else if (infantry) {
-                    this->unitList->decreaseInfantryCount();
-                }
-
-                delete current->unit;
-                delete current;
-            } else {
-                prev = current;
+            if (current->unit->getQuantity() <= 1)
+            {
+                this->unitList->remove(current);
             }
 
             current = current->next;
         }
+    } 
+    // Defense
+    else {
+        UnitNode *current = this->unitList->getHead();
+        while (current)
+        {
+            current->unit->setQuantity(ceil(current->unit->getQuantity() * 0.8));
 
-        recalcIndex();
-    } else {
-        UnitNode* current = this->unitList->getHead();
-        while (current) {
-            UnitNode* next = current->next;
-            delete current->unit;
-            delete current;
-            current = next;
+            if (current->unit->getQuantity() <= 1)
+            {
+                this->unitList->remove(current);
+            }
+
+            current = current->next;
         }
-
-        this->unitList->setHead(nullptr);
-        this->LF = 0;
-        this->EXP = 0;
     }
+
+    // Recalculate index
+    recalcIndex();
 }
 
 string ARVN::str() const {
@@ -669,60 +500,33 @@ string ARVN::str() const {
 }
 
 ////////////////////////////// Class UnitList //////////////////////////////
-bool UnitList::isSpecialNumber(int number) {
-    int pow3[6] = {1, 3, 9, 27, 81, 243};
-    int pow5[5] = {1, 5, 25, 125, 625};
-    int pow7[4] = {1, 7, 49, 343};
+bool Army::isSpecialNumber(int number) {
+    vector<int> power = {
+        // Sum of powers of 3
+        1, 3, 4, 9, 10, 12, 13, 27, 28, 30, 31, 36, 37, 39, 40,
+        81, 82, 84, 85, 90, 91, 93, 94, 108, 109, 111, 112, 117, 118, 120, 121,
+        243, 244, 246, 247, 252, 253, 255, 256, 270, 271, 273, 274, 279, 280, 282, 283,
+        324, 325, 327, 328, 333, 334, 336, 337, 351, 352, 354, 355, 360, 361, 363, 364,
+        729, 730, 732, 733, 738, 739, 741, 742, 756, 757, 759, 760, 765, 766, 768, 769,
+        810, 811, 813, 814, 819, 820, 822, 823, 837, 838, 840, 841, 846, 847, 849, 850,
+        972, 973, 975, 976, 981, 982, 984, 985, 999, 1000,
 
-    for (int i = 1; i < 64; i++) {
-        int sum = 0;
-        for (int j = 0; j < 6; j++) {
-            if (i & (1 << j)) {
-                sum += pow3[j];
-            }
-        }
-        if (sum == number) return true;
-    }
+        // Sum of powers of 5
+        /* 1, */ 5, 6, 25, 26, /* 30, */ /* 31, */ 125, 126, 130, 131, 150, 151, 155, 156,
+        625, 626, 630, 631, 650, 651, 655, 656, 750, 751, 755, /* 756, */ 775, 776, 780, 781,
 
-    for (int i = 1; i < 32; i++) {
-        int sum = 0;
-        for (int j = 0; j < 5; j++) {
-            if (i & (1 << j)) {
-                sum += pow5[j];
-            }
-        }
-        if (sum == number) return true;
-    }
+        // Sum of powers of 7
+        /* 1, */ 7, 8, 49, 50, 56, 57, 343, 344, 350, /* 351, */ 392, 393, 399, 400};
 
-    for (int i = 1; i < 16; i++) {
-        int sum = 0;
-        for (int j = 0; j < 4; j++) {
-            if (i & (1 << j)) {
-                sum += pow7[j];
-            }
-        }
-        if (sum == number) return true;
-    }
+    for (auto num : power)
+        if (num == number)
+            return true;
 
     return false;
 }
 
 UnitList::UnitList(int capacity) {
     this->capacity = capacity;
-
-    this->head = nullptr;
-    this->vehicleCount = 0;
-    this->infantryCount = 0;
-}
-
-UnitList::UnitList(int LF, int EXP) {
-    int sum = LF + EXP;
-    
-    if (isSpecialNumber(sum)) {
-        this->capacity = 12;
-    } else {
-        this->capacity = 8;
-    }
 
     this->head = nullptr;
     this->vehicleCount = 0;
@@ -837,31 +641,9 @@ UnitList::~UnitList() {
     UnitNode* current = this->head;
     while (current) {
         UnitNode* next = current->next;
-        delete current->unit;
         delete current;
         current = next;
     }
-}
-
-void UnitList::clear() {
-    UnitNode* current = this->head;
-    while (current) {
-        UnitNode* next = current->next;
-
-        // Delete the unit object
-        delete current->unit;
-        current->unit = nullptr;
-
-        // Delete the node
-        delete current;
-
-        current = next;
-    }
-
-    this->head = nullptr;
-    this->capacity = 0;
-    this->vehicleCount = 0;
-    this->infantryCount = 0;
 }
 
 void UnitList::remove(UnitNode* node) {
@@ -891,54 +673,32 @@ void UnitList::remove(UnitNode* node) {
     delete node->unit;
     delete node;
 }
+
+Unit* UnitList::pop_front() {
+    if (this->head == nullptr)
+        return nullptr;
+    UnitNode* head = this->head;
+    this->head = head->next;
+    Unit* returnUnit = head->unit;
+    delete head;
+    if (dynamic_cast<Vehicle *>(returnUnit))
+        vehicleCount--;
+    else    
+        infantryCount--;
+    return returnUnit;
+}
+
 UnitNode* UnitList::getHead() const {
     return this->head;
 }
 
-void UnitList::setHead(UnitNode* next) {
-    this->head = next;
-}
-
-void UnitList::decreaseVehicleCount() {
-    this->vehicleCount--;
-}
-
-void UnitList::decreaseInfantryCount() {
-    this->infantryCount--;
-}
-
 void UnitList::deleteUnit(Unit* unit) {
-    UnitNode* current = this->head;
-    UnitNode* prev = nullptr;
-
-    while (current) {
-        if (current->unit == unit) {
-            // Remove the node from the list
-            if (prev) {
-                prev->next = current->next;
-            } else {
-                this->head = current->next;
-            }
-
-            // Update appropriate counter
-            Vehicle* vehicle = dynamic_cast<Vehicle*>(unit);
-            Infantry* infantry = dynamic_cast<Infantry*>(unit);
-
-            if (vehicle) {
-                this->vehicleCount--;
-            } else {
-                this->infantryCount--;
-            }
-
-            delete current;
-
-            // Unit found and deleted, exit method
-            return;
-        }
-    
-        prev = current;
-        current = current->next;
-    }
+    Vehicle* vehicle = dynamic_cast<Vehicle *>(unit);
+    Infantry* infantry = dynamic_cast<Infantry *>(unit);
+    if (vehicle)
+        deleteVehicle(vehicle);
+    else    
+        deleteInfantry(infantry);
 }
 
 void UnitList::deleteVehicle(Vehicle* vehicle) {
@@ -991,6 +751,43 @@ void UnitList::deleteInfantry(Infantry* infantry) {
         prev = current;
         current = current->next;
     }
+}
+
+////////////////////////////// Class Position //////////////////////////////
+Position::Position(int r = 0, int c = 0)
+{
+    this->r = r;
+    this->c = c;
+}
+
+Position::Position(const string &str_pos)
+{
+    sscanf(str_pos.c_str(), "(%d,%d)", &this->r, &this->c);
+}
+
+int Position::getRow() const
+{
+    return this->r;
+}
+
+int Position::getCol() const
+{
+    return this->c;
+}
+
+void Position::setRow(int r)
+{
+    this->r = r;
+}
+
+void Position::setCol(int c)
+{
+    this->c = c;
+}
+
+string Position::str() const
+{
+    return "(" + to_string(this->r) + "," + to_string(this->c) + ")";
 }
 
 ////////////////////////////// Class TerrainElement //////////////////////////////
