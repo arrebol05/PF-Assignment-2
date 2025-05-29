@@ -86,6 +86,8 @@ public:
     void setLF(int LF);
     void setEXP(int EXP);
     void recalcIndex();
+
+    bool isSpecialNumber(int number);
 };
 
 // TODO: Class LiberationArmy
@@ -144,6 +146,7 @@ public:
     int getWeight() const;
     void setQuantity(int quantity);
     void setWeight(int weight);
+    void setAttackScore(int score);
 };
 
 // TODO: Class Vehicle
@@ -194,8 +197,6 @@ private:
     int vehicleCount;
     int infantryCount;
 
-    bool isSpecialNumber(int number);
-
 public:
     UnitList(int capacity);
     bool insert(Unit *unit);                   // return true if insert successfully
@@ -208,6 +209,8 @@ public:
     ~UnitList();
     void clear();
     void remove(UnitNode* node);
+
+    Unit* pop_front();
 
     Vehicle* getVehicle(VehicleType vehicleType);
     Infantry* getInfantry(InfantryType infantryType);
@@ -298,7 +301,7 @@ public:
 class SpecialZone : public TerrainElement {
 private: 
     Position pos;
-    
+
 public:
     SpecialZone(Position pos);
     ~SpecialZone();
@@ -321,12 +324,17 @@ public:
     ~BattleField();
 
     // TODO
+    TerrainElement* getTerrainAt(int row, int col) const;
+    void terrainEffect(Army* army);
+    int getRow() const;
+    int getCol() const;
     string str() const;
 };
 
 
 // TODO: Class Configuration
 class Configuration {
+friend class HCMCampaign;
 private:
     int num_rows, num_cols;
     vector<Position*> arrayForest;
@@ -335,29 +343,36 @@ private:
     vector<Position*> arrayUrban;
     vector<Position*> arraySpecialZone;
     Unit** liberationUnits;
-    Unit** ARVNUnits;
+    Unit** arvnUnits;
     int liberationUnitCount;
-    int ARVNUnitCount;
+    int arvnUnitCount;
     int eventCode;
+
+    // TODO: Helper
+    vector<Position*> parsePositionArray(const string &arraystr);
+    vector<string> splitString(const string &str);
+    vector<string> splitParameters(const string &str);
+    Unit* createUnit(const string &str);
     
 public:
-    Configuration(const string& filepath);
+    Configuration(const string &filepath);
     ~Configuration();
     string str() const;
 };
 
 
-class HCMCampaign
+class HCMCampaign : public Configuration
 {
 private:
     Configuration *config;
     BattleField *battleField;
     LiberationArmy *liberationArmy;
-    ARVN *ARVN;
+    ARVN *arvn;
 
 public:
     HCMCampaign(const string &config_file_path);
     void run();
+    void removeWeakUnits(Army* army);
     string printResult();
 };
 
