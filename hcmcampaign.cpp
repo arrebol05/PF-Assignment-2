@@ -692,15 +692,6 @@ UnitNode* UnitList::getHead() const {
     return this->head;
 }
 
-void UnitList::deleteUnit(Unit* unit) {
-    Vehicle* vehicle = dynamic_cast<Vehicle *>(unit);
-    Infantry* infantry = dynamic_cast<Infantry *>(unit);
-    if (vehicle)
-        deleteVehicle(vehicle);
-    else    
-        deleteInfantry(infantry);
-}
-
 void UnitList::deleteVehicle(Vehicle* vehicle) {
     UnitNode* current = this->head;
     UnitNode* prev = nullptr;
@@ -814,7 +805,7 @@ Road::Road(Position pos) : TerrainElement(pos) {}
 
 Road::~Road() {}
 
-void Road::getEffect(Army* army) {}
+void Road::getEffect(Army *army) {}
 
 ////////////////////////////// Class Mountain //////////////////////////////
 
@@ -823,34 +814,29 @@ Mountain::Mountain(Position pos) : TerrainElement(pos) {}
 Mountain::~Mountain() {}
 
 void Mountain::getEffect(Army* army) {
-    UnitNode* current = army->getUnitList()->getHead();
+    LiberationArmy *libArmy = dynamic_cast<LiberationArmy *>(army);
 
-    while (current) {
-        Unit* unit = current->unit;
+    UnitNode *current = army->getUnitList()->getHead();
+    while (current)
+    {
+        Unit *unit = current->unit;
+        Vehicle *vehicle = dynamic_cast<Vehicle *>(unit);
         double distance = calcDistance(this->pos, unit->getCurrentPosition());
-
-        LiberationArmy* libArmy = dynamic_cast<LiberationArmy*>(army);
-        ARVN* arvnArmy = dynamic_cast<ARVN*>(army);
 
         if (libArmy) {
             if (distance <= 2.0) {
-                Vehicle* vehicle = dynamic_cast<Vehicle*>(unit);
-                Infantry* infantry = dynamic_cast<Infantry*>(unit);
-                if (vehicle) {
-                    army->setLF(ceil(army->getLF() - vehicle->getAttackScore() * 0.1));
-                } else if (infantry) {
-                    army->setEXP(ceil(army->getEXP() + infantry->getAttackScore() * 0.3));
-                } 
+                if (vehicle)
+                    army->setLF(ceil(army->getLF() - unit->getAttackScore() * 0.1));
+                else
+                    army->setEXP(ceil(army->getEXP() + unit->getAttackScore() * 0.3));
             }
-        } else if (arvnArmy) {
+        }
+        else {
             if (distance <= 4.0) {
-                Vehicle* vehicle = dynamic_cast<Vehicle*>(unit);
-                Infantry* infantry = dynamic_cast<Infantry*>(unit);
-                if (vehicle) {
-                    army->setLF(ceil(army->getLF() - vehicle->getAttackScore() * 0.05));
-                } else if (infantry) {
-                    army->setEXP(ceil(army->getEXP() + infantry->getAttackScore() * 0.2));
-                } 
+                if (vehicle)
+                    army->setLF(ceil(army->getLF() - unit->getAttackScore() * 0.05));
+                else
+                    army->setEXP(ceil(army->getEXP() + unit->getAttackScore() * 0.2));
             }
         }
 
@@ -865,14 +851,93 @@ River::River(Position pos) : TerrainElement(pos) {}
 River::~River() {}
 
 void River::getEffect(Army* army) {
-    UnitNode* current = army->getUnitList()->getHead();
-    while (current) {
-        Unit* unit = current->unit;
+    UnitNode *current = army->getUnitList()->getHead();
+    while (current)
+    {
+        Unit *unit = current->unit;
+        Infantry *infantry = dynamic_cast<Infantry *>(unit);
         double distance = calcDistance(this->pos, unit->getCurrentPosition());
 
-        if (distance <= 2.0) {
+        if (distance <= 2.0)
+            if (infantry)
+                army->setEXP(ceil(army->getEXP() - unit->getAttackScore() * 0.1));
 
+        current = current->next;
+    }
+}
+
+////////////////////////////// Class Urban //////////////////////////////
+
+Urban::Urban(Position pos) : TerrainElement(pos) {}
+
+Urban::~Urban() {}
+
+void Urban::getEffect(Army *army) {
+    LiberationArmy *libArmy = dynamic_cast<LiberationArmy *>(army);
+
+    UnitNode *current = army->getUnitList()->getHead();
+    while (current)
+    {
+        Unit *unit = current->unit;
+        Vehicle *vehicle = dynamic_cast<Vehicle *>(unit);
+        Infantry *infantry = dynamic_cast<Infantry *>(unit);
+        double distance = calcDistance(this->pos, unit->getCurrentPosition());
+
+        if (libArmy)
+        {
+            if (vehicle && vehicle->getVehicleType() == ARTILLERY && distance <= 2.0)
+                army->setLF(army->getLF() - ceil(unit->getAttackScore() * 0.5));
+            if (infantry && (infantry->getInfantryType() == SPECIALFORCES || infantry->getInfantryType() == REGULARINFANTRY) && distance <= 5.0)
+                army->setLF(army->getEXP() + ceil(2 * unit->getAttackScore() / distance));
         }
+        else
+        {
+            if (infantry && infantry->getInfantryType() == REGULARINFANTRY && distance <= 5.0)
+                army->setLF(army->getEXP() + ceil(3 * unit->getAttackScore() / (distance * 2)));
+        }
+
+        current = current->next;
+    }
+}
+
+////////////////////////////// Class Fortification //////////////////////////////
+
+Fortification::Fortification(Position pos) : TerrainElement(pos) {}
+
+Fortification::~Fortification() {}
+
+void Fortification::getEffect(Army *army) {
+    LiberationArmy *libArmy = dynamic_cast<LiberationArmy *>(army);
+
+    UnitNode *current = army->getUnitList()->getHead();
+    while (current)
+    {
+        Unit *unit = current->unit;
+        Vehicle *vehicle = dynamic_cast<Vehicle *>(unit);
+        double distance = calcDistance(this->pos, unit->getCurrentPosition());
+
+        if (libArmy)
+        {
+            if (distance <= 2.0)
+            {
+                if (vehicle)
+                    army->setLF(ceil(army->getLF() - unit->getAttackScore() * 0.2));
+                else
+                    army->setEXP(ceil(army->getEXP() - unit->getAttackScore() * 0.2));
+            }
+        }
+        else
+        {
+            if (distance <= 4.0)
+            {
+                if (vehicle)
+                    army->setLF(ceil(army->getLF() + unit->getAttackScore() * 0.2));
+                else
+                    army->setEXP(ceil(army->getEXP() + unit->getAttackScore() * 0.2));
+            }
+        }
+
+        current = current->next;
     }
 }
 

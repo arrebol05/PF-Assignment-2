@@ -216,7 +216,6 @@ public:
 
     UnitNode* getHead() const;
 
-    void deleteUnit(Unit* unit);
     void deleteVehicle(Vehicle* vehicle);
     void deleteInfantry(Infantry* infantry);
 };
