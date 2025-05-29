@@ -15,7 +15,7 @@
 #include <cstring>
 #include <climits>
 #include <cassert>
-#include <string>
+#include <string.h>
 #include <fstream>
 #include <sstream>
 #include <vector>

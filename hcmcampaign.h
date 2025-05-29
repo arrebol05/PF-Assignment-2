@@ -67,6 +67,7 @@ enum InfantryType
 
 class Army
 {
+friend class UnitList;
 protected:
     int LF, EXP;
     string name;
@@ -82,6 +83,9 @@ public:
     UnitList* getUnitList() const;
     int getLF() const;
     int getEXP() const;
+    void setLF(int LF);
+    void setEXP(int EXP);
+    void recalcIndex();
 };
 
 // TODO: Class LiberationArmy
@@ -202,6 +206,7 @@ public:
     // TODO
     UnitList(int LF, int EXP);
     ~UnitList();
+    void clear();
     void remove(UnitNode* node);
 
     Vehicle* getVehicle(VehicleType vehicleType);
@@ -221,16 +226,26 @@ public:
 
 class TerrainElement
 {
+private: 
+    Position pos;
+
 public:
-    TerrainElement();
+    TerrainElement(Position pos);
     ~TerrainElement();
     virtual void getEffect(Army *army) = 0;
+
+    // TODO: Helper method
+    double calcDistance(const Position& pos1, const Position& pos2);
+    Position getPosition() const;
 };
 
 // TODO: Class Road
 class Road : public TerrainElement {
+private:
+    Position pos;
+
 public:
-    Road();
+    Road(Position pos);
     ~Road();
     void getEffect(Army *army) override;
 };
@@ -238,41 +253,54 @@ public:
 // TODO: Class Mountain
 class Mountain : public TerrainElement {
 private: 
-    double calculateDistance(const Position& pos1, const Position& pos2);
+    Position pos;
+
 public:
-    Mountain();
+    Mountain(Position pos);
     ~Mountain();
     void getEffect(Army *army) override;
 };
 
 // TODO: Class River
 class River : public TerrainElement {
+private: 
+    Position pos;
+
 public:
-    River();
+    River(Position pos);
     ~River();
     void getEffect(Army *army) override;
 };
 
 // TODO: Class Urban
 class Urban : public TerrainElement {
+private: 
+    Position pos;
+
 public:
-    Urban();
+    Urban(Position pos);
     ~Urban();
     void getEffect(Army *army) override;
 };
 
 // TODO: Class Fortification
 class Fortification : public TerrainElement {
+private: 
+    Position pos;
+
 public:
-    Fortification();
+    Fortification(Position pos);
     ~Fortification();
     void getEffect(Army *army) override;
 };
 
 // TODO: Class SpecialZone
 class SpecialZone : public TerrainElement {
+private: 
+    Position pos;
+    
 public:
-    SpecialZone();
+    SpecialZone(Position pos);
     ~SpecialZone();
     void getEffect(Army *army) override;
 };
