@@ -166,6 +166,7 @@ private:
 
 public:
     Vehicle(int quantity, int weight, const Position pos, VehicleType vehicleType);
+    ~Vehicle();
     int getAttackScore() override;
     string str() const override;
 
@@ -184,6 +185,7 @@ private:
 
 public:
     Infantry(int quantity, int weight, const Position pos, InfantryType infantryType);
+    ~Infantry();
     int getAttackScore() override;
     string str() const override;
 
@@ -331,7 +333,7 @@ public:
     ~BattleField();
 
     // TODO
-    TerrainElement *getTerrainAt(int row, int col) const;
+    TerrainElement *getElement(int row, int col) const;
     void terrainEffect(Army *army);
     int getRow() const;
     int getCol() const;

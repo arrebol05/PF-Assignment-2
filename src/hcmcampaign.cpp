@@ -12,6 +12,8 @@ Unit::Unit(int quantity, int weight, const Position pos)
     this->pos = pos;
 }
 
+Unit::~Unit() {}
+
 Position Unit::getCurrentPosition() const
 {
     return this->pos;
@@ -42,6 +44,8 @@ Vehicle::Vehicle(int quantity, int weight, const Position pos, VehicleType vehic
 {
     this->vehicleType = vehicleType;
 }
+
+Vehicle::~Vehicle() {}
 
 int Vehicle::getAttackScore()
 {
@@ -79,6 +83,8 @@ Infantry::Infantry(int quantity, int weight, const Position pos, InfantryType in
 {
     this->infantryType = infantryType;
 }
+
+Infantry::~Infantry() {}
 
 int Infantry::getAttackScore()
 {
@@ -1132,7 +1138,7 @@ BattleField::~BattleField() {
     delete[] this->terrain;
 }
 
-TerrainElement* BattleField::getTerrainAt(int row, int col) const {
+TerrainElement* BattleField::getElement(int row, int col) const {
     if (row >= 0 && row < this->n_rows && col >= 0 && col < this->n_cols) {
         return this->terrain[row][col];
     }
