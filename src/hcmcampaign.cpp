@@ -1462,7 +1462,7 @@ Configuration::Configuration(const string &filepath = nullptr) {
             this->arraySpecialZone = parsePositionArray(value);
         } 
         
-        else if (key == "UNIT_LIST") {
+        else if (key == "UNIT_LIST=") {
             // Handle unit list
             string liststr = value;
 
