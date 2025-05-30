@@ -255,7 +255,7 @@ int LiberationArmy::getNearestFibonacci(int number)
     return fib2;
 }
 
-void LiberationArmy::fight(Army *enemy, bool defense = false)
+void LiberationArmy::fight(Army *enemy, bool defense)
 {
     // Attack case
     if (!defense)
@@ -536,7 +536,7 @@ string LiberationArmy::str() const
 ////////////////////////////// Class ARVN //////////////////////////////
 ARVN::ARVN(Unit **unitArray, int size, string name, BattleField *battleField) : Army(unitArray, size, name, battleField) {}
 
-void ARVN::fight(Army *fight, bool defense = false)
+void ARVN::fight(Army *fight, bool defense)
 {
     // Attack
     if (!defense)
@@ -578,7 +578,7 @@ string ARVN::str() const
 }
 
 ////////////////////////////// Class UnitList //////////////////////////////
-bool isSpecialNumber(int number)
+bool Army::isSpecialNumber(int number)
 {
     vector<int> power = {
         // Sum of powers of 3
@@ -882,7 +882,7 @@ void UnitList::deleteInfantry(Infantry *infantry)
 }
 
 ////////////////////////////// Class Position //////////////////////////////
-Position::Position(int r = 0, int c = 0)
+Position::Position(int r, int c)
 {
     this->r = r;
     this->c = c;

@@ -93,6 +93,7 @@ public:
     void calScore();
     int getScore(int);
     void setScore(int, int);
+    bool isSpecialNumber(int);
 };
 
 // TODO: Class LiberationArmy
