@@ -56,7 +56,7 @@ int Vehicle::getAttackScore()
 
 string Vehicle::str() const
 {
-    string typeName[7] = {"TANK", "MORTAR", "ANTIAIRCRAFT", "ARMOREDCAR", "APC", "ARTILLERY", "TANK"};
+    string typeName[7] = {"TRUCK", "MORTAR", "ANTIAIRCRAFT", "ARMOREDCAR", "APC", "ARTILLERY", "TANK"};
     return "Vehicle[vehicleType=" + typeName[this->vehicleType] + ",quantity=" + to_string(this->quantity) + ",weight=" + to_string(this->weight) + ",position=" + this->pos.str() + "]";
 }
 
@@ -525,7 +525,8 @@ void LiberationArmy::fight(Army *enemy, bool defense)
 
 string LiberationArmy::str() const
 {
-    return "LiberationArmy[name=" + this->name + ",LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + this->battleField->str() + "]";
+    string bfstr = (battleField) ? battleField->str() : "";
+    return "LiberationArmy[name=" + this->name + ",LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + bfstr + "]";
 }
 
 ////////////////////////////// Class ARVN //////////////////////////////
@@ -569,7 +570,8 @@ void ARVN::fight(Army *fight, bool defense)
 
 string ARVN::str() const
 {
-    return "ARVN[name=" + this->name + ",LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + this->battleField->str() + "]";
+    string bfstr = (battleField) ? battleField->str() : "";
+    return "ARVN[name=" + this->name + ",LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + bfstr + "]";
 }
 
 ////////////////////////////// Class UnitList //////////////////////////////
@@ -739,13 +741,14 @@ string UnitList::str() const
 {
     string output = "UnitList[count_vehicle=" + to_string(this->vehicleCount) + ";count_infantry=" + to_string(this->infantryCount) + ";" + this->head->unit->str();
 
-    UnitNode *current = this->head->next;
-    while (current)
-    {
-        output += "," + current->unit->str();
-        current = current->next;
+    if (this->head) {
+        output += ";" + this->head->unit->str();
+        UnitNode* current = this->head->next;
+        while (current) {
+            output += "," + current->unit->str();
+            current = current->next;
+        }
     }
-
     output += "]";
     return output;
 }
