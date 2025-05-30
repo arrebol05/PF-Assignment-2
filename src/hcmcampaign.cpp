@@ -204,9 +204,10 @@ void Army::recalcIndex()
 void Army::removeWeakUnits()
 {
     UnitNode *current = this->unitList->getHead(), *prev = nullptr;
+    int idx = 0;
     while (current)
     {
-        if (current->unit->getAttackScore() <= 5)
+        if (scores[idx] <= 5)
         {
             this->unitList->remove(current);
             if (prev)
@@ -219,6 +220,7 @@ void Army::removeWeakUnits()
             prev = current;
             current = current->next;
         }
+        ++idx;
     }
 
     recalcIndex();
@@ -474,10 +476,6 @@ void LiberationArmy::fight(Army *enemy, bool defense)
 
             // Let ARVN defense
             enemy->fight(this, true);
-
-            // Remove weak units from both enemies
-            this->removeWeakUnits();
-            enemy->removeWeakUnits();
         }
         else
         {
@@ -1709,14 +1707,23 @@ void HCMCampaign::run() {
     if (config->eventCode < 75) {
         // Liberation Army attacks
         liberationArmy->fight(arvn, false);
+        // Remove weak units from both enemies
+        liberationArmy->removeWeakUnits();
+        arvn->removeWeakUnits();
         
     } else {
         // ARVN attacks
         arvn->fight(liberationArmy, false);
         liberationArmy->fight(arvn, true);
+        // Remove weak units from both enemies
+        liberationArmy->removeWeakUnits();
+        arvn->removeWeakUnits();
 
         // Liberation Army counterattacks
         liberationArmy->fight(arvn, false);
+        // Remove weak units from both enemies
+        liberationArmy->removeWeakUnits();
+        arvn->removeWeakUnits();
     }
 }
 
