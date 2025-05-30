@@ -91,6 +91,8 @@ public:
     void recalcIndex();
     void removeWeakUnits();
     void calScore();
+    int getScore(int);
+    void setScore(int, int);
 };
 
 // TODO: Class LiberationArmy
@@ -319,7 +321,7 @@ private:
     int n_rows, n_cols;
     // TODO
 
-    TerrainElement*** terrain;
+    TerrainElement ***terrain;
 
 public:
     BattleField(int n_rows, int n_cols, vector<Position *> arrayForest,
@@ -328,42 +330,42 @@ public:
     ~BattleField();
 
     // TODO
-    TerrainElement* getTerrainAt(int row, int col) const;
-    void terrainEffect(Army* army);
+    TerrainElement *getTerrainAt(int row, int col) const;
+    void terrainEffect(Army *army);
     int getRow() const;
     int getCol() const;
     string str() const;
 };
 
-
 // TODO: Class Configuration
-class Configuration {
-friend class HCMCampaign;
+class Configuration
+{
+    friend class HCMCampaign;
+
 private:
     int num_rows, num_cols;
-    vector<Position*> arrayForest;
-    vector<Position*> arrayRiver;
-    vector<Position*> arrayFortification;
-    vector<Position*> arrayUrban;
-    vector<Position*> arraySpecialZone;
-    Unit** liberationUnits;
-    Unit** arvnUnits;
+    vector<Position *> arrayForest;
+    vector<Position *> arrayRiver;
+    vector<Position *> arrayFortification;
+    vector<Position *> arrayUrban;
+    vector<Position *> arraySpecialZone;
+    Unit **liberationUnits;
+    Unit **arvnUnits;
     int liberationUnitCount;
     int arvnUnitCount;
     int eventCode;
 
     // TODO: Helper
-    vector<Position*> parsePositionArray(const string &arraystr);
+    vector<Position *> parsePositionArray(const string &arraystr);
     vector<string> splitString(const string &str);
     vector<string> splitParameters(const string &str);
-    Unit* createUnit(const string &str);
-    
+    Unit *createUnit(const string &str);
+
 public:
     Configuration(const string &filepath);
     ~Configuration();
     string str() const;
 };
-
 
 class HCMCampaign : public Configuration
 {
@@ -376,7 +378,7 @@ private:
 public:
     HCMCampaign(const string &config_file_path);
     void run();
-    void removeWeakUnits(Army* army);
+    void removeWeakUnits(Army *army);
     string printResult();
 };
 

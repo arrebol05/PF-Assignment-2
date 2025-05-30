@@ -226,6 +226,14 @@ void Army::calScore() {
     }
 }
 
+void Army::setScore(int idx, int val) {
+    scores[idx] = val;
+}
+
+int Army::getScore(int idx) {
+    return scores[idx];
+}
+
 ////////////////////////////// Class LiberationArmy //////////////////////////////
 LiberationArmy::LiberationArmy(Unit **unitArray, int size, string name, BattleField *battleField) : Army(unitArray, size, name, battleField) {}
 
@@ -278,14 +286,12 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
             if (vehicle)
             {
                 vehicleUnits.push_back(vehicle);
-                int score = vehicle->getAttackScore();
-                minVehicleScore += score;
+                minVehicleScore += scores[vehicleUnits.size() - 1];
             }
             else
             {
                 infantryUnits.push_back(infantry);
-                int score = infantry->getAttackScore();
-                minInfantryScore += score;
+                minInfantryScore += scores[vehicleUnits.size() + infantryUnits.size() - 1];
             }
 
             current = current->next;
@@ -294,6 +300,8 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
         // Initialization for combination
         vector<Vehicle *> bestVehicleCombination;
         vector<Infantry *> bestInfantryCombination;
+        int vehicleCount = vehicleUnits.size(), infantryCount = infantryUnits.size(),
+            minVehicleUsed = vehicleCount + infantryCount, minInfantryUsed = minVehicleUsed;
 
         bool foundVehicleCombination = minVehicleScore >= enemy->getLF(),
              foundInfantryCombination = minInfantryScore >= enemy->getEXP();
@@ -301,13 +309,13 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
         // We only loop and get in case of there exists a combination
         if (foundVehicleCombination)
         {
-            int vehicleCount = vehicleUnits.size();
+            
 
             // Bitmask technique to get all combination
             for (int mask = 1; mask < (1 << vehicleCount); mask++)
             {
                 vector<Vehicle *> combination;
-                int totalScore = 0;
+                int totalScore = 0, used = 0;
 
                 for (int i = 0; i < vehicleCount; i++)
                 {
@@ -315,24 +323,25 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
                     {
                         combination.push_back(vehicleUnits[i]);
                         totalScore += scores[i];
+                        ++used;
                     }
                 }
 
-                if (totalScore > enemy->getEXP() && totalScore < minVehicleScore)
+                if (totalScore > enemy->getEXP() && (totalScore < minVehicleScore || (totalScore == minVehicleScore &&  used < minVehicleUsed)))
                 {
                     minVehicleScore = totalScore;
                     bestVehicleCombination = combination;
+                    minVehicleUsed = used;
                 }
             }
         }
 
         if (foundInfantryCombination)
         {
-            int infantryCount = infantryUnits.size(), vehicleCount = vehicleUnits.size();
             for (int mask = 1; mask < (1 << infantryCount); mask++)
             {
                 vector<Infantry *> combination;
-                int totalScore = 0;
+                int totalScore = 0, used = 0;
 
                 for (int i = 0; i < infantryCount; i++)
                 {
@@ -340,13 +349,15 @@ void LiberationArmy::fight(Army *enemy, bool defense = false)
                     {
                         combination.push_back(infantryUnits[i]);
                         totalScore += scores[i + vehicleCount];
+                        ++used;
                     }
                 }
 
-                if (totalScore > enemy->getEXP() && totalScore < minInfantryScore)
+                if (totalScore > enemy->getEXP() && (totalScore < minInfantryScore || (totalScore == minInfantryScore && used < minInfantryUsed)))
                 {
                     minInfantryScore = totalScore;
                     bestInfantryCombination = combination;
+                    minInfantryUsed = used;
                 }
             }
         }
@@ -993,6 +1004,7 @@ River::~River() {}
 
 void River::getEffect(Army *army)
 {
+    int idx = 0;
     UnitNode *current = army->getUnitList()->getHead();
     while (current)
     {
@@ -1000,11 +1012,11 @@ void River::getEffect(Army *army)
         Infantry *infantry = dynamic_cast<Infantry *>(unit);
         double distance = calcDistance(this->pos, unit->getCurrentPosition());
 
-        if (distance <= 2.0)
-            if (infantry)
-                army->setEXP(ceil(army->getEXP() - unit->getAttackScore() * 0.1));
+        if (distance <= 2.0 && infantry)
+            army->setScore(idx, ceil(army->getScore(idx) * 0.9));
 
         current = current->next;
+        idx++;
     }
 }
 
@@ -1018,6 +1030,7 @@ void Urban::getEffect(Army *army)
 {
     LiberationArmy *libArmy = dynamic_cast<LiberationArmy *>(army);
 
+    int idx = 0;
     UnitNode *current = army->getUnitList()->getHead();
     while (current)
     {
@@ -1029,17 +1042,18 @@ void Urban::getEffect(Army *army)
         if (libArmy)
         {
             if (vehicle && vehicle->getVehicleType() == ARTILLERY && distance <= 2.0)
-                army->setLF(army->getLF() - ceil(unit->getAttackScore() * 0.5));
+                army->setScore(idx, ceil(army->getScore(idx) * 0.5));
             if (infantry && (infantry->getInfantryType() == SPECIALFORCES || infantry->getInfantryType() == REGULARINFANTRY) && distance <= 5.0)
-                army->setLF(army->getEXP() + ceil(2 * unit->getAttackScore() / distance));
+                army->setScore(idx, ceil(army->getScore(idx) + 2 * unit->getAttackScore() / distance));
         }
         else
         {
             if (infantry && infantry->getInfantryType() == REGULARINFANTRY && distance <= 5.0)
-                army->setLF(army->getEXP() + ceil(3 * unit->getAttackScore() / (distance * 2)));
+                army->setScore(idx, ceil(army->getScore(idx) + 3 * unit->getAttackScore() / (distance * 2)));
         }
 
         current = current->next;
+        idx++;
     }
 }
 
@@ -1053,35 +1067,26 @@ void Fortification::getEffect(Army *army)
 {
     LiberationArmy *libArmy = dynamic_cast<LiberationArmy *>(army);
 
+    int idx = 0;
     UnitNode *current = army->getUnitList()->getHead();
     while (current)
     {
         Unit *unit = current->unit;
-        Vehicle *vehicle = dynamic_cast<Vehicle *>(unit);
         double distance = calcDistance(this->pos, unit->getCurrentPosition());
 
         if (libArmy)
         {
             if (distance <= 2.0)
-            {
-                if (vehicle)
-                    army->setLF(ceil(army->getLF() - unit->getAttackScore() * 0.2));
-                else
-                    army->setEXP(ceil(army->getEXP() - unit->getAttackScore() * 0.2));
-            }
+                army->setScore(idx, ceil(army->getScore(idx) * 0.8));
         }
         else
         {
-            if (distance <= 4.0)
-            {
-                if (vehicle)
-                    army->setLF(ceil(army->getLF() + unit->getAttackScore() * 0.2));
-                else
-                    army->setEXP(ceil(army->getEXP() + unit->getAttackScore() * 0.2));
-            }
+            if (distance <= 2.0)
+                army->setScore(idx, ceil(army->getScore(idx) * 1.2));
         }
 
         current = current->next;
+        idx++;
     }
 }
 
@@ -1092,17 +1097,17 @@ SpecialZone::SpecialZone(Position pos) : TerrainElement(pos) {}
 SpecialZone::~SpecialZone() {}
 
 void SpecialZone::getEffect(Army* army) {
+    int idx = 0;
     UnitNode *current = army->getUnitList()->getHead();
     while (current) {
         Unit* unit = current->unit;
         double distance = calcDistance(this->pos, current->unit->getCurrentPosition());
 
-        if (distance <= 1.0) {
-            army->setLF(ceil(army->getLF() - unit->getAttackScore()));
-            army->setEXP(ceil(army->getEXP() - unit->getAttackScore()));
-        }
+        if (distance <= 1.0)
+            army->setScore(idx, 0);
 
         current = current->next;
+        idx++;
     }
 }
 
