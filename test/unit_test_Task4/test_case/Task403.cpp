@@ -25,9 +25,7 @@ bool UNIT_TEST_Task4::Task403() {
         result += "\n** After the fight\n";
         campaign->run();
         result += campaign->printResult();
-        cout << "This tracks core dump\n";
         delete campaign;
-        cout << "This tracks core dump\n";
     }
     catch (exception &e)
     {

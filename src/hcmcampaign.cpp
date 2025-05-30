@@ -125,13 +125,9 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
         const Infantry *infantry = dynamic_cast<const Infantry *>(unitArray[i]);
 
         if (vehicle)
-        {
             this->LF += unitArray[i]->getAttackScore();
-        }
         else
-        {
             this->EXP += unitArray[i]->getAttackScore();
-        }
     }
 
     if (LF > 1000)
@@ -144,9 +140,10 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
     else
         this->unitList = new UnitList(8);
 
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size; i++){
         this->unitList->insert(unitArray[i]);
-
+    }
+    
     calScore();
 }
 
@@ -206,14 +203,22 @@ void Army::recalcIndex()
 
 void Army::removeWeakUnits()
 {
-    UnitNode *current = this->unitList->getHead();
-
+    UnitNode *current = this->unitList->getHead(), *prev = nullptr;
     while (current)
     {
         if (current->unit->getAttackScore() <= 5)
-            unitList->remove(current);
-
-        current = current->next;
+        {
+            this->unitList->remove(current);
+            if (prev)
+                current = prev->next;
+            else
+                current = this->unitList->getHead();
+        }
+        else
+        {
+            prev = current;
+            current = current->next;
+        }
     }
 
     recalcIndex();
@@ -308,14 +313,12 @@ void LiberationArmy::fight(Army *enemy, bool defense)
         int vehicleCount = vehicleUnits.size(), infantryCount = infantryUnits.size(),
             minVehicleUsed = vehicleCount + infantryCount, minInfantryUsed = minVehicleUsed;
 
-        bool foundVehicleCombination = minVehicleScore >= enemy->getLF(),
-             foundInfantryCombination = minInfantryScore >= enemy->getEXP();
+        bool foundVehicleCombination = minVehicleScore > enemy->getLF(),
+             foundInfantryCombination = minInfantryScore > enemy->getEXP();
 
         // We only loop and get in case of there exists a combination
         if (foundVehicleCombination)
         {
-            
-
             // Bitmask technique to get all combination
             for (int mask = 1; mask < (1 << vehicleCount); mask++)
             {
@@ -370,7 +373,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
         bool win = false;
 
         // Condition check for fight result
-        switch (foundVehicleCombination << 1 + foundInfantryCombination)
+        switch ((foundVehicleCombination << 1) + foundInfantryCombination)
         {
         // Case found both combination: Will definitely win
         case 3:
@@ -383,6 +386,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
                 win = true;
                 bestInfantryCombination = infantryUnits;
             }
+            break;
         // Case found Infantry combination: Check if win
         case 1:
             if (LF > enemy->getLF())
@@ -396,6 +400,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
 
         if (win)
         {
+
             // Delete all the combinations, add enemy
             for (Vehicle *unit : bestVehicleCombination)
                 this->unitList->deleteVehicle(unit);
@@ -422,7 +427,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
             while (unit)
             {
                 enemyUnits.push_back(unit);
-                Unit *unit = enemy->getUnitList()->pop_front();
+                unit = enemy->getUnitList()->pop_front();
             }
 
             // Vector to store units that couldn't be inserted (Case 3)
@@ -466,13 +471,22 @@ void LiberationArmy::fight(Army *enemy, bool defense)
             // Vehicle just chilling
             for (auto unit : leftoverVehicle)
                 enemy->getUnitList()->insert(unit);
+
+            // Let ARVN defense
+            enemy->fight(this, true);
+
+            // Remove weak units from both enemies
+            this->removeWeakUnits();
+            enemy->removeWeakUnits();
         }
         else
         {
-            // Lose - each units lost 10% its weight
+            // Not fight - each units lost 10% its weight
             UnitNode *current = this->unitList->getHead();
-            while (current)
+            while (current) {
                 current->unit->setWeight(ceil(current->unit->getWeight() * 0.9));
+                current = current->next;
+            }
         }
 
         // Update index - This debunk the fight start effect, so no need to worry
@@ -501,7 +515,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
             // Reduction of each unit's quantity
             if (oneLower)
             {
-                UnitNode *current = this->unitList->getHead();
+                UnitNode *current = this->unitList->getHead(), *prev = nullptr;
                 while (current)
                 {
                     current->unit->setQuantity(ceil(current->unit->getQuantity() * 0.9));
@@ -509,9 +523,16 @@ void LiberationArmy::fight(Army *enemy, bool defense)
                     if (current->unit->getQuantity() <= 1)
                     {
                         this->unitList->remove(current);
+                        if (prev)
+                            current = prev->next;
+                        else
+                            current = this->unitList->getHead();
                     }
-
-                    current = current->next;
+                    else
+                    {
+                        prev = current;
+                        current = current->next;
+                    }
                 }
             }
 
@@ -548,8 +569,7 @@ void ARVN::fight(Army *fight, bool defense)
     if (!defense)
     {
         // LF and EXP unchange
-
-        UnitNode *current = this->unitList->getHead();
+        UnitNode *current = this->unitList->getHead(), *prev = nullptr;
         while (current)
         {
             current->unit->setQuantity(ceil(current->unit->getQuantity() * 0.9));
@@ -557,9 +577,15 @@ void ARVN::fight(Army *fight, bool defense)
             if (current->unit->getQuantity() <= 1)
             {
                 this->unitList->remove(current);
+                if (prev)
+                    current = prev->next;
+                else
+                    current = this->unitList->getHead();
             }
-
-            current = current->next;
+            else {
+                prev = current;
+                current = current->next;
+            }
         }
     }
     // Defense
@@ -623,25 +649,27 @@ UnitList::UnitList(int capacity)
 bool UnitList::insert(Unit *unit)
 {
     if (vehicleCount + infantryCount >= this->capacity)
-    {
         return false;
-    }
+
+    if (!unit)
+        return false;
 
     Vehicle *vehicle = dynamic_cast<Vehicle *>(unit);
     Infantry *infantry = dynamic_cast<Infantry *>(unit);
 
-    UnitNode *newNode = new UnitNode();
-    newNode->unit = unit;
-    newNode->next = nullptr;
-
     if (vehicle)
     {
         Unit* exist = getVehicle(vehicle->getVehicleType());
+
         if (exist) {
             exist->setQuantity(exist->getQuantity() + vehicle->getQuantity());
             exist->setWeight(max(exist->getWeight(), vehicle->getWeight()));
         }
         else {
+            UnitNode *newNode = new UnitNode();
+            newNode->unit = unit;
+            newNode->next = nullptr;
+
             if (!this->head)
             {
                 this->head = newNode;
@@ -656,14 +684,17 @@ bool UnitList::insert(Unit *unit)
             vehicleCount++;
         }
     }
-    else if (infantry)
+    else
     {
         Unit *exist = getInfantry(infantry->getInfantryType());
+
         if (exist) {
             exist->setQuantity(exist->getQuantity() + infantry->getQuantity());
             exist->setWeight(max(exist->getWeight(), infantry->getWeight()));
         }
         else {
+            UnitNode *newNode = new UnitNode();
+            newNode->unit = unit;
             newNode->next = this->head;
             this->head = newNode;
             this->infantryCount++;
@@ -721,9 +752,7 @@ Vehicle *UnitList::getVehicle(VehicleType vehicleType)
     {
         Vehicle *vehicle = dynamic_cast<Vehicle *>(current->unit);
         if (vehicle && vehicle->vehicleType == vehicleType)
-        {
             return vehicle;
-        }
         current = current->next;
     }
     return nullptr;
@@ -734,14 +763,13 @@ Infantry *UnitList::getInfantry(InfantryType infantryType)
     if (!this->head)
         return nullptr;
 
+
     UnitNode *current = this->head;
     while (current)
     {
         Infantry *infantry = dynamic_cast<Infantry *>(current->unit);
         if (infantry && infantry->infantryType == infantryType)
-        {
             return infantry;
-        }
         current = current->next;
     }
     return nullptr;
@@ -779,32 +807,32 @@ void UnitList::remove(UnitNode *node)
     if (!node || !this->head)
         return;
 
-    UnitNode *current = this->head;
+    UnitNode *current = this->head, *prev = nullptr;
     while (current)
     {
-        if (current = node)
+        if (current == node)
         {
-            UnitNode *temp = current;
-            current = temp->next;
-            delete temp;
-            return;
+            if (prev)
+                prev->next = current->next;
+            else
+                this->head = current->next;
+
+            break;
         }
-        current = current->next;
+        else {
+            prev = current;
+            current = current->next;
+        }
     }
 
     Vehicle *vehicle = dynamic_cast<Vehicle *>(node->unit);
     Infantry *infantry = dynamic_cast<Infantry *>(node->unit);
 
     if (vehicle)
-    {
         this->vehicleCount--;
-    }
     else
-    {
         this->infantryCount--;
-    }
 
-    delete node->unit;
     delete node;
 }
 
@@ -867,13 +895,9 @@ void UnitList::deleteInfantry(Infantry *infantry)
         {
             // Remove the node from the list
             if (prev)
-            {
                 prev->next = current->next;
-            }
             else
-            {
                 this->head = current->next;
-            }
 
             // Update vehicleCount
             this->infantryCount--;
@@ -1243,15 +1267,15 @@ vector<Position*> Configuration::parsePositionArray(const string &str) {
 
     // Find all positions
     int start = 0;
-    while (true) {
+    while (start < str.length()) {
         start = str.find('(', start);
         if (start == string::npos) break;
 
         int end = str.find(')', start);
         if (end == string::npos) break;
 
-        string str = str.substr(start, end - start + 1);
-        arrayFortification.push_back(new Position(str));
+        string pos = str.substr(start, end - start + 1);
+        arrayFortification.push_back(new Position(pos));
 
         start = end + 1;
     }
@@ -1293,7 +1317,7 @@ vector<string> Configuration::splitString(const string &str) {
         }
 
         if (count == 0) {
-            string unitstr = str.substr(unitstart, end - start + 1);
+            string unitstr = str.substr(unitstart, end - unitstart);
             units.push_back(unitstr);
         }
 
@@ -1308,13 +1332,13 @@ vector<string> Configuration::splitParameters(const string &str) {
 
     // Find the parameter section
     int start = str.find('(');
-    int end = str.find(')');
 
-    if (start == string::npos || end == string::npos) {
+    if (start == string::npos) {
         return result;
     }
 
-    string params = str.substr(start + 1, end - start - 1);
+    string params = str.substr(start + 1, str.length() - start);
+    start = 0;
 
     int pstart = 0;
     int count = 0;
@@ -1322,9 +1346,11 @@ vector<string> Configuration::splitParameters(const string &str) {
     for (int i = 0; i < params.length(); i++) {
         if (params[i] == '(') {
             count++;
-        } else if (params[i] == ')') {
+        }
+        else if (params[i] == ')') {
             count--;
-        } else if (params[i] == ',' && count == 0) {
+        } 
+        else if (params[i] == ',' && count == 0) {
             // Found a separator at the top level
             string param = params.substr(start, i - start);
 
@@ -1350,65 +1376,48 @@ vector<string> Configuration::splitParameters(const string &str) {
     return result;
 }
 
-Unit* Configuration::createUnit(const string &str) {
-    int start = str.find('(');
-    if (start == string::npos) return nullptr;
-
-    string unitName = str.substr(0, start);
-    // Trim whitespace
-    unitName.erase(0, unitName.find_first_not_of(" \t\\n"));
-    unitName.erase(unitName.find_last_not_of(" \t\n") + 1);
-
-    // Get parameters
-    vector<string> params = splitParameters(str);
-    if (params.size() < 4) return nullptr;
-
-    int quantity = stoi(params[0]);
-    int weight = stoi(params[1]);
-    Position pos(params[2]);
-    int armyBelong = stoi(params[3]);
-
+Unit* Configuration::createUnit(const string &str, int quantity, int weight, string pos) {
     // Create appropriate unit based on name
     // Vehicle
-    if (unitName == "TANK") {
+    if (str == "TANK") {
         return new Vehicle(quantity, weight, pos, TANK);
     }
-    else if (unitName == "ARTILLERY") {
+    else if (str == "ARTILLERY") {
         return new Vehicle(quantity, weight, pos, ARTILLERY);
     }
-    else if (unitName == "ARMOREDCAR") {
+    else if (str == "ARMOREDCAR") {
         return new Vehicle(quantity, weight, pos, ARMOREDCAR);
     }
-    else if (unitName == "APC") {
+    else if (str == "APC") {
         return new Vehicle(quantity, weight, pos, APC);
     }
-    else if (unitName == "TRUCK") {
+    else if (str == "TRUCK") {
         return new Vehicle(quantity, weight, pos, TRUCK);
     }
-    else if (unitName == "MORTAR") {
+    else if (str == "MORTAR") {
         return new Vehicle(quantity, weight, pos, MORTAR);
     }
-    else if (unitName == "ANTIAIRCRAFT") {
+    else if (str == "ANTIAIRCRAFT") {
         return new Vehicle(quantity, weight, pos, ANTIAIRCRAFT);
     }
 
     // Infantry
-    else if (unitName == "SNIPER") {
+    else if (str == "SNIPER") {
         return new Infantry(quantity, weight, pos, SNIPER);
     }
-    else if (unitName == "ANTIAIRCRAFTSQUAD") {
+    else if (str == "ANTIAIRCRAFTSQUAD") {
         return new Infantry(quantity, weight, pos, ANTIAIRCRAFTSQUAD);
     }
-    else if (unitName == "MORTARSQUAD") {
+    else if (str == "MORTARSQUAD") {
         return new Infantry(quantity, weight, pos, MORTARSQUAD);
     }
-    else if (unitName == "ENGINEER") {
+    else if (str == "ENGINEER") {
         return new Infantry(quantity, weight, pos, ENGINEER);
     }
-    else if (unitName == "SPECIALFORCES") {
+    else if (str == "SPECIALFORCES") {
         return new Infantry(quantity, weight, pos, SPECIALFORCES);
     }
-    else if (unitName == "REGULARINFANTRY") {
+    else if (str == "REGULARINFANTRY") {
         return new Infantry(quantity, weight, pos, REGULARINFANTRY);
     }
     else return nullptr; // Unknown unit type
@@ -1484,7 +1493,7 @@ Configuration::Configuration(const string &filepath = nullptr) {
 
                     if (armyBelong == 0) {
                         this->liberationUnitCount++;
-                    } else if (armyBelong == 1) {
+                    } else {
                         this->arvnUnitCount++;
                     }
                 }
@@ -1504,11 +1513,21 @@ Configuration::Configuration(const string &filepath = nullptr) {
             int arvnIndex = 0;
 
             for (const string & unitstr : unitStr) {
-                Unit* unit = createUnit(unitstr);
-                if (unit == nullptr) continue;
-
                 vector<string> params = splitParameters(unitstr);
                 if (params.size() >= 4) {
+                    int start = unitstr.find('(');
+                    if (start == string::npos)
+                        continue;
+
+                    string unitName = unitstr.substr(0, start);
+                    // Trim whitespace
+                    unitName.erase(0, unitName.find_first_not_of(" \t\\n"));
+                    unitName.erase(unitName.find_last_not_of(" \t\n") + 1);
+
+                    Unit *unit = createUnit(unitName, stoi(params[0]), stoi(params[1]), params[2]);
+                    if (unit == nullptr)
+                        continue;
+
                     int armyBelong = stoi(params[3]);
                     if (armyBelong == 0 && libIndex < this->liberationUnitCount) {
                         this->liberationUnits[libIndex++] = unit;
@@ -1517,7 +1536,8 @@ Configuration::Configuration(const string &filepath = nullptr) {
                     }
                 }
             }
-        } else if (key == "EVENT_CODE") {
+        } 
+        else if (key == "EVENT_CODE=") {
             int code = stoi(value);
 
             // Handle event code
@@ -1655,6 +1675,7 @@ string Configuration::str() const {
 
 HCMCampaign::HCMCampaign(const string &config_file_path) {
     this->config = new Configuration(config_file_path);
+
     this->battleField = new BattleField(
         this->config->num_rows, config->num_cols,
         this->config->arrayForest,
@@ -1683,25 +1704,20 @@ void HCMCampaign::run() {
     // Apply terrain effects
     battleField->terrainEffect(liberationArmy);
     battleField->terrainEffect(arvn);
-
+    
     // Execute battle based on event code
     if (config->eventCode < 75) {
         // Liberation Army attacks
         liberationArmy->fight(arvn, false);
-        arvn->fight(liberationArmy, true);
         
     } else {
         // ARVN attacks
         arvn->fight(liberationArmy, false);
         liberationArmy->fight(arvn, true);
+
         // Liberation Army counterattacks
         liberationArmy->fight(arvn, false);
-        arvn->fight(liberationArmy, true);
     }
-
-    // Remove weak units from both enemies
-    liberationArmy->removeWeakUnits();
-    arvn->removeWeakUnits();
 }
 
 string HCMCampaign::printResult() {

@@ -368,7 +368,7 @@ private:
     vector<Position *> parsePositionArray(const string &arraystr);
     vector<string> splitString(const string &str);
     vector<string> splitParameters(const string &str);
-    Unit *createUnit(const string &str);
+    Unit *createUnit(const string &str, int quantity, int weight, string pos);
     string trim(const string&);
 
 public:
