@@ -1235,8 +1235,9 @@ vector<Position*> Configuration::parsePositionArray(const string &str) {
     if (content.empty()) return positions;
 
     // Find all positions
+    int start = 0;
     while (true) {
-        int start = str.find('(', start);
+        start = str.find('(', start);
         if (start == string::npos) break;
 
         int end = str.find(')', start);
@@ -1460,7 +1461,7 @@ Configuration::Configuration(const string &filepath = nullptr) {
                 liststr = liststr.substr(1, liststr.length() - 2);
             }
 
-            if (liststr.empty()) return;
+            if (liststr.empty()) continue;
 
             // Split into individual unit strings
             vector<string> unitStr = splitString(liststr);
@@ -1518,9 +1519,9 @@ Configuration::Configuration(const string &filepath = nullptr) {
                 this->eventCode = code;
             }
         }
-
-        file.close();
-    } 
+        
+    }
+    file.close();
 }
 
 Configuration::~Configuration() {

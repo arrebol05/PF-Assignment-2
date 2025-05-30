@@ -376,7 +376,7 @@ public:
     string str() const;
 };
 
-class HCMCampaign : public Configuration
+class HCMCampaign
 {
 private:
     Configuration *config;
