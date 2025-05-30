@@ -326,6 +326,12 @@ private:
 
     TerrainElement ***terrain;
 
+    vector<Position *> arrayForest;
+    vector<Position *> arrayRiver;
+    vector<Position *> arrayFortification;
+    vector<Position *> arrayUrban; 
+    vector<Position *> arraySpecialZone;
+
 public:
     BattleField(int n_rows, int n_cols, vector<Position *> arrayForest,
                 vector<Position *> arrayRiver, vector<Position *> arrayFortification,

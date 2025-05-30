@@ -57,7 +57,7 @@ int Vehicle::getAttackScore()
 string Vehicle::str() const
 {
     string typeName[7] = {"TANK", "MORTAR", "ANTIAIRCRAFT", "ARMOREDCAR", "APC", "ARTILLERY", "TANK"};
-    return "Vehicle[vehicleType=" + typeName[this->vehicleType] + ",quantity=" + to_string(this->quantity) + ",weight=" + to_string(this->weight) + ",pos=" + this->pos.str();
+    return "Vehicle[vehicleType=" + typeName[this->vehicleType] + ",quantity=" + to_string(this->quantity) + ",weight=" + to_string(this->weight) + ",position=" + this->pos.str() + "]";
 }
 
 VehicleType Vehicle::getVehicleType() const
@@ -94,7 +94,7 @@ int Infantry::getAttackScore()
     }
     else if (personalNumber < 3)
     {
-        this->quantity *= ceil(quantity * 0.9);
+        this->quantity = ceil(quantity * 0.9);
     }
 
     return typeValue * 56 + this->quantity * this->weight;
@@ -103,7 +103,7 @@ int Infantry::getAttackScore()
 string Infantry::str() const
 {
     string typeName[6] = {"SNIPER", "ANTIAIRCRAFTSQUAD", "MORTARSQUAD", "ENGINEER", "SPECIALFORCES", "REGULARINFANTRY"};
-    return "Infantry[infantryType=" + typeName[this->infantryType] + ",quantity=" + to_string(this->quantity) + ",weight=" + to_string(this->weight) + ",pos=" + this->pos.str();
+    return "Infantry[infantryType=" + typeName[this->infantryType] + ",quantity=" + to_string(this->quantity) + ",weight=" + to_string(this->weight) + ",position=" + this->pos.str() + "]";
 }
 
 InfantryType Infantry::getInfantryType() const
@@ -1107,13 +1107,45 @@ vector<Position *> arrayUrban, vector<Position *> arraySpecialZone) {
     this->n_rows = n_rows;
     this->n_cols = n_cols;
 
-    // Initialize terrain pointer and set Road elements
+    this->arrayForest = arrayForest;
+    this->arrayRiver = arrayRiver;
+    this->arrayFortification = arrayFortification;
+    this->arrayUrban = arrayUrban;
+    this->arraySpecialZone = arraySpecialZone;
+
+    // Initialize terrain pointer and set default terrain is Road
     this->terrain = new TerrainElement**[this->n_rows];
     for (int i = 0; i < this->n_rows; i++) {
         this->terrain[i] = new TerrainElement*[this->n_cols];
         for (int j = 0; j < this->n_cols; j++) {
             this->terrain[i][j] = new Road(Position(i,j));
         }
+    }
+
+    // Set specific terrain types
+    for (Position* pos : this->arrayForest) {
+        delete terrain[pos->getRow()][pos->getCol()];
+        terrain[pos->getRow()][pos->getCol()] = new Mountain(Position(pos->getRow(), pos->getCol()));
+    }
+
+    for (Position* pos : this->arrayRiver) {
+        delete terrain[pos->getRow()][pos->getCol()];
+        terrain[pos->getRow()][pos->getCol()] = new River(Position(pos->getRow(), pos->getCol()));
+    }
+
+    for (Position* pos : this->arrayFortification) {
+        delete terrain[pos->getRow()][pos->getCol()];
+        terrain[pos->getRow()][pos->getCol()] = new Fortification(Position(pos->getRow(), pos->getCol()));
+    }
+
+    for (Position* pos : this->arrayUrban) {
+        delete terrain[pos->getRow()][pos->getCol()];
+        terrain[pos->getRow()][pos->getCol()] = new Urban(Position(pos->getRow(), pos->getCol()));
+    }
+
+    for (Position* pos : this->arraySpecialZone) {
+        delete terrain[pos->getRow()][pos->getCol()];
+        terrain[pos->getRow()][pos->getCol()] = new SpecialZone(Position(pos->getRow(), pos->getCol()));
     }
 }
 
@@ -1136,10 +1168,32 @@ TerrainElement* BattleField::getElement(int row, int col) const {
 }
 
 void BattleField::terrainEffect(Army* army) {
-    for (int i = 0; i < this->n_rows; i++) {
-        for (int j = 0; j < this->n_cols; j++) {
-            this->terrain[i][j]->getEffect(army);
-        }
+    // Apply terrain effects in priority order
+    // Road has no effect, so not included
+
+    // Forested Mountains
+    for (Position* pos : this->arrayForest) {
+        this->terrain[pos->getRow()][pos->getCol()]->getEffect(army);
+    }
+
+    // Deep River
+    for (Position* pos : this->arrayRiver) {
+        this->terrain[pos->getRow()][pos->getCol()]->getEffect(army);
+    }
+
+    // Fortification
+    for (Position* pos : this->arrayFortification) {
+        this->terrain[pos->getRow()][pos->getCol()]->getEffect(army);
+    }
+
+    // Urban Area
+    for (Position* pos : this->arrayUrban) {
+        this->terrain[pos->getRow()][pos->getCol()]->getEffect(army);
+    }
+
+    // Special Zone
+    for (Position* pos : this->arraySpecialZone) {
+        this->terrain[pos->getRow()][pos->getCol()]->getEffect(army);
     }
 }
 
