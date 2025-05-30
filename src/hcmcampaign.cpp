@@ -51,12 +51,12 @@ int Vehicle::getAttackScore()
 {
     int typeValue = static_cast<int>(this->vehicleType);
 
-    return (typeValue * 304 + this->quantity * this->weight) / 30;
+    return ceil((typeValue * 304 + this->quantity * this->weight) / 30.0);
 }
 
 string Vehicle::str() const
 {
-    string typeName[7] = {"TANK", "ARTILLERY", "ARMOREDCAR", "APC", "TRUCK", "MORTAR", "ANTIAIRCRAFT"};
+    string typeName[7] = {"TANK", "MORTAR", "ANTIAIRCRAFT", "ARMOREDCAR", "APC", "ARTILLERY", "TANK"};
     return "Vehicle[vehicleType=" + typeName[this->vehicleType] + ",quantity=" + to_string(this->quantity) + ",weight=" + to_string(this->weight) + ",pos=" + this->pos.str();
 }
 
@@ -68,15 +68,7 @@ VehicleType Vehicle::getVehicleType() const
 ////////////////////////////// Class Infantry //////////////////////////////
 int Infantry::calPersonalNumber(int number)
 {
-    int sum = 0;
-
-    while (number > 0)
-    {
-        sum += number % 10;
-        number = number / 10;
-    }
-
-    return sum;
+    return (number) ? 1 + (number - 1) % 9 : 0;
 }
 
 Infantry::Infantry(int quantity, int weight, const Position pos, InfantryType infantryType) : Unit(quantity, weight, pos)
@@ -90,25 +82,22 @@ int Infantry::getAttackScore()
 {
     int typeValue = static_cast<int>(this->infantryType);
 
-    int score = typeValue * 56 + this->quantity + this->weight;
+    int score = typeValue * 56 + this->quantity * this->weight;
 
-    if (this->infantryType == SPECIALFORCES && this->weight == sqrt(this->weight) * sqrt(this->weight))
-    {
+    if ((this->infantryType == SPECIALFORCES) && (this->weight == sqrt(this->weight) * sqrt(this->weight)))
         score += 75;
-        return score;
-    }
 
     int personalNumber = calPersonalNumber(score + 1975);
     if (personalNumber > 7)
     {
-        this->quantity *= 1.2;
+        this->quantity = ceil(quantity * 1.2);
     }
     else if (personalNumber < 3)
     {
-        this->quantity *= 0.9;
+        this->quantity *= ceil(quantity * 0.9);
     }
 
-    return typeValue * 56 + this->quantity + this->weight;
+    return typeValue * 56 + this->quantity * this->weight;
 }
 
 string Infantry::str() const
@@ -139,7 +128,7 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
         {
             this->LF += unitArray[i]->getAttackScore();
         }
-        else if (infantry)
+        else
         {
             this->EXP += unitArray[i]->getAttackScore();
         }
@@ -1240,7 +1229,7 @@ vector<string> Configuration::splitString(const string &str) {
     return units;
 }
 
-vector<string> splitParameters(const string &str) {
+vector<string> Configuration::splitParameters(const string &str) {
     vector<string> result;
 
     // Find the parameter section
