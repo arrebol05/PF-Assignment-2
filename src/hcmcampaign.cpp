@@ -1223,6 +1223,13 @@ string BattleField::str() const {
 
 ////////////////////////////// Class Configuration //////////////////////////////
 
+string Configuration::trim(const string &s)
+{
+    size_t start = s.find_first_not_of(" \t\r\n");
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return (start == string::npos) ? "" : s.substr(start, end - start + 1);
+}
+
 vector<Position*> Configuration::parsePositionArray(const string &str) {
     vector<Position*> positions;
     string content = str;
@@ -1423,10 +1430,13 @@ Configuration::Configuration(const string &filepath = nullptr) {
     }
     
     while (getline(file, line)) {
+        line = trim(line);
+        if (line.empty())
+            continue;
         // Find position of equal
         int index = line.find("=");
         
-        string key = line.substr(0, index);
+        string key = line.substr(0, index + 1);
         string value = line.substr(index + 1);
 
         if (key == "NUM_ROWS=") {
@@ -1445,7 +1455,7 @@ Configuration::Configuration(const string &filepath = nullptr) {
         else if (key == "ARRAY_FORTIFICATION=") {
             this->arrayFortification = parsePositionArray(value);
         } 
-        else if (key == "ARRAY_URBAN") {
+        else if (key == "ARRAY_URBAN=") {
             this->arrayUrban = parsePositionArray(value);
         } 
         else if (key == "ARRAY_SPECIAL_ZONE=") {

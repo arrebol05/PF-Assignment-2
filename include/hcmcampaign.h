@@ -369,6 +369,7 @@ private:
     vector<string> splitString(const string &str);
     vector<string> splitParameters(const string &str);
     Unit *createUnit(const string &str);
+    string trim(const string&);
 
 public:
     Configuration(const string &filepath);
