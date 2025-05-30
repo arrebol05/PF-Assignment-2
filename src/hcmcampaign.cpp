@@ -562,12 +562,7 @@ void ARVN::fight(Army *fight, bool defense = false)
         UnitNode *current = this->unitList->getHead();
         while (current)
         {
-            current->unit->setQuantity(ceil(current->unit->getQuantity() * 0.8));
-
-            if (current->unit->getQuantity() <= 1)
-            {
-                this->unitList->remove(current);
-            }
+            current->unit->setWeight(ceil(current->unit->getWeight() * 0.8));
 
             current = current->next;
         }
@@ -637,8 +632,7 @@ bool UnitList::insert(Unit *unit)
         Unit* exist = getVehicle(vehicle->getVehicleType());
         if (exist) {
             exist->setQuantity(exist->getQuantity() + vehicle->getQuantity());
-            delete unit;
-            unit = nullptr;
+            exist->setWeight(max(exist->getWeight(), vehicle->getWeight()));
         }
         else {
             if (!this->head)
@@ -660,8 +654,7 @@ bool UnitList::insert(Unit *unit)
         Unit *exist = getInfantry(infantry->getInfantryType());
         if (exist) {
             exist->setQuantity(exist->getQuantity() + infantry->getQuantity());
-            delete unit;
-            unit = nullptr;
+            exist->setWeight(max(exist->getWeight(), infantry->getWeight()));
         }
         else {
             newNode->next = this->head;
@@ -1491,10 +1484,14 @@ Configuration::~Configuration() {
         delete pos;
     }
 
-    // Delete Unit array
+    // Delete Unit & Unit array
+    for (int i = 0; i < liberationUnitCount; ++i)
+        delete liberationUnits[i];
     delete[] this->liberationUnits;
     this->liberationUnitCount = 0;
 
+    for (int i = 0; i < arvnUnitCount; ++i)
+        delete arvnUnits[i];
     delete[] this->arvnUnits;
     this->arvnUnitCount = 0;
 }

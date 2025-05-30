@@ -1,65 +1,53 @@
 /*
-* Ho Chi Minh City University of Technology
-* Faculty of Computer Science and Engineering
-* Initial code for Assignment 2
-* Programming Fundamentals Spring 2025
-* Date: 02.02.2025
-*/
+ * KTLT2 - HK242
+ * file : main.cpp
+ * SRC template
+ * Author: Võ Tiến
+ * Link FB : https://www.facebook.com/Shiba.Vo.Tien
+ * Link Group : https://www.facebook.com/groups/khmt.ktmt.cse.bku
+ * Date: 25.02.2024
+ */
 
-//The library here is concretely set, students are not allowed to include any other libraries.
-
-#include "hcmcampaign.h"
+#include "main.hpp"
+#include "unit_test_Task4.hpp"
 
 using namespace std;
 
-void g_satc_01() {
-    cout << "----- Sample Testcase 01 -----" << endl;
-    Configuration* config = new Configuration("config.txt");
-    cout << config->str() << endl;
-    delete config;
-}
-void g_satc_02() {
-    cout << "----- Sample Testcase 02 -----" << endl;
-    Vehicle tankOfLiber(5, 2, Position(1, 2), TANK);
-    Vehicle truckOfLiber(3, 1, Position(2, 2), TRUCK);
-    Infantry sniperOfLiber(5, 2, Position(1, 1), SNIPER);
+string TEST_CASE = "Task4";
+int main(int argc, char *argv[])
+{
+  cout << "-------------------------------------------------------------"
+       << endl;
+  cout << GREEN << BOLD << TEST_CASE << " - KTLT2 - HK242 - VO TIEN" << endl;
+  cout << CYAN << BOLD << "Vo Tien : https://www.facebook.com/Shiba.Vo.Tien" << endl
+       << endl;
+  if (argc < 1)
+  {
+    printTestCase();
+    return 1;
+  }
 
-    Vehicle tankOfAr(5, 2, Position(3, 2), TANK);
-    Vehicle truckOfAr(3, 1, Position(3, 1), TRUCK);
-    Infantry sniperOfAr(5, 2, Position(3, 3), SNIPER);
-
-    Unit** unitArrayOfLiber = new Unit*[3];
-    unitArrayOfLiber[0] = &tankOfLiber;
-    unitArrayOfLiber[1] = &truckOfLiber;
-    unitArrayOfLiber[2] = &sniperOfLiber;
-
-    Unit** unitArrayOfAr = new Unit*[3];
-    unitArrayOfAr[0] = &tankOfAr;
-    unitArrayOfAr[1] = &truckOfAr;
-    unitArrayOfAr[2] = &sniperOfAr;
-
-    LiberationArmy* liberationArmy = new LiberationArmy(unitArrayOfLiber, 3, "LiberationArmy", 0);
-    cout << liberationArmy->str() << endl;
-    ARVN* arvn = new ARVN(unitArrayOfAr, 3, "ARVN", 0);
-    cout << arvn->str() << endl;
-
-    Army* enemyLiber = arvn;
-    liberationArmy->fight(enemyLiber, false);
-    Army* enemyAr = liberationArmy;
-    arvn->fight(enemyAr, false);
-
-    cout << "* After the fight" << endl;
-    cout << liberationArmy->str() << endl;
-    cout << arvn->str() << endl;
-
-    delete liberationArmy;
-    delete arvn;
-    delete[] unitArrayOfLiber;
-    delete[] unitArrayOfAr;
+  handleTestUnit(argc, argv);
+  cout << "-------------------------------------------------------------"
+       << endl;
 }
 
-int main(int argc, const char * argv[]) {
-    g_satc_01();
-    g_satc_02();
-    return 0;
+void handleTestUnit(int argc, char *argv[])
+{
+  UNIT_TEST_Task4 unitTest;
+
+  if (argc == 1 || (argc == 2 && std::string(argv[1]) == "all"))
+  {
+    std::cout << GREEN << BOLD << "Running unit_test/unit_test_" << TEST_CASE << RESET << "\n";
+    unitTest.runAllTests();
+  }
+  else if (argc == 2)
+  {
+    std::cout << GREEN << BOLD << "Running unit_test/unit_test_" << TEST_CASE << RESET << "\n";
+    unitTest.runTest(argv[1]);
+  }
+  else
+  {
+    printTestCase();
+  }
 }
