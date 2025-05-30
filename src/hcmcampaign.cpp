@@ -134,6 +134,11 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
         }
     }
 
+    if (LF > 1000)
+        LF = 1000;
+    if (EXP > 500)
+        EXP = 500;
+
     if (isSpecialNumber(LF + EXP))
         this->unitList = new UnitList(12);
     else
@@ -192,6 +197,11 @@ void Army::recalcIndex()
 
         current = current->next;
     }
+
+    if (LF > 1000)
+        LF = 1000;
+    if (EXP > 500)
+        EXP = 500;
 }
 
 void Army::removeWeakUnits()
@@ -526,7 +536,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
 string LiberationArmy::str() const
 {
     string bfstr = (battleField) ? battleField->str() : "";
-    return "LiberationArmy[name=" + this->name + ",LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + bfstr + "]";
+    return "LiberationArmy[LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + bfstr + "]";
 }
 
 ////////////////////////////// Class ARVN //////////////////////////////
@@ -571,7 +581,7 @@ void ARVN::fight(Army *fight, bool defense)
 string ARVN::str() const
 {
     string bfstr = (battleField) ? battleField->str() : "";
-    return "ARVN[name=" + this->name + ",LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + bfstr + "]";
+    return "ARVN[LF=" + to_string(this->LF) + ",EXP=" + to_string(this->EXP) + ",unitList=" + this->unitList->str() + ",battleField=" + bfstr + "]";
 }
 
 ////////////////////////////// Class UnitList //////////////////////////////
@@ -739,7 +749,7 @@ Infantry *UnitList::getInfantry(InfantryType infantryType)
 
 string UnitList::str() const
 {
-    string output = "UnitList[count_vehicle=" + to_string(this->vehicleCount) + ";count_infantry=" + to_string(this->infantryCount) + ";" + this->head->unit->str();
+    string output = "UnitList[count_vehicle=" + to_string(this->vehicleCount) + ";count_infantry=" + to_string(this->infantryCount);
 
     if (this->head) {
         output += ";" + this->head->unit->str();
@@ -776,7 +786,6 @@ void UnitList::remove(UnitNode *node)
         {
             UnitNode *temp = current;
             current = temp->next;
-            delete temp->unit;
             delete temp;
             return;
         }
