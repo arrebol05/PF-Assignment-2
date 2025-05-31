@@ -39,10 +39,19 @@ void Unit::setWeight(int weight)
     this->weight = weight;
 }
 
+void Unit::setScore(int score) {
+    this->score = score;
+}
+
+int Unit::getScore() {
+    return score;
+}
+
 ////////////////////////////// Class Vehicle //////////////////////////////
 Vehicle::Vehicle(int quantity, int weight, const Position pos, VehicleType vehicleType) : Unit(quantity, weight, pos)
 {
     this->vehicleType = vehicleType;
+    setScore(getAttackScore());
 }
 
 Vehicle::~Vehicle() {}
@@ -74,6 +83,7 @@ int Infantry::calPersonalNumber(int number)
 Infantry::Infantry(int quantity, int weight, const Position pos, InfantryType infantryType) : Unit(quantity, weight, pos)
 {
     this->infantryType = infantryType;
+    setScore(getAttackScore());
 }
 
 Infantry::~Infantry() {}
@@ -144,7 +154,7 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
         this->unitList->insert(unitArray[i]);
     }
     
-    calScore();
+    resetScore();
 }
 
 UnitList *Army::getUnitList() const
@@ -176,6 +186,7 @@ void Army::recalcIndex()
 {
     this->LF = 0;
     this->EXP = 0;
+    int idx = 0;
 
     UnitNode *current = this->unitList->getHead();
     while (current)
@@ -185,11 +196,13 @@ void Army::recalcIndex()
 
         if (vehicle)
         {
-            this->LF += vehicle->getAttackScore();
+            vehicle->setScore(vehicle->getAttackScore());
+            this->LF += vehicle->getScore();
         }
         else
         {
-            this->EXP += infantry->getAttackScore();
+            infantry->setScore(infantry->getAttackScore());
+            this->EXP += infantry->getScore();
         }
 
         current = current->next;
@@ -207,7 +220,7 @@ void Army::removeWeakUnits()
     int idx = 0;
     while (current)
     {
-        if (scores[idx] <= 5)
+        if (current->unit->getScore() <= 5)
         {
             this->unitList->remove(current);
             if (prev)
@@ -226,24 +239,13 @@ void Army::removeWeakUnits()
     recalcIndex();
 }
 
-void Army::calScore() {
-    scores = {};
+void Army::resetScore() {
     UnitNode *current = this->unitList->getHead();
-
     while (current)
     {
-        scores.push_back(current->unit->getAttackScore());
-
+        current->unit->setScore(current->unit->getAttackScore());
         current = current->next;
     }
-}
-
-void Army::setScore(int idx, int val) {
-    scores[idx] = val;
-}
-
-int Army::getScore(int idx) {
-    return scores[idx];
 }
 
 ////////////////////////////// Class LiberationArmy //////////////////////////////
@@ -285,8 +287,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
         vector<Infantry *> infantryUnits;
 
         // Setup to initialize min as the sum of list vehicles/ infantries
-        int minVehicleScore = 0;
-        int minInfantryScore = 0;
+        int minVehicleScore = 0, minInfantryScore = 0, idx = 0;
 
         // Traverse from head to tail
         UnitNode *current = this->unitList->getHead();
@@ -298,12 +299,12 @@ void LiberationArmy::fight(Army *enemy, bool defense)
             if (vehicle)
             {
                 vehicleUnits.push_back(vehicle);
-                minVehicleScore += scores[vehicleUnits.size() - 1];
+                minVehicleScore += vehicle->getScore();
             }
             else
             {
                 infantryUnits.push_back(infantry);
-                minInfantryScore += scores[vehicleUnits.size() + infantryUnits.size() - 1];
+                minInfantryScore += infantry->getScore();
             }
 
             current = current->next;
@@ -332,7 +333,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
                     if (mask & (1 << i))
                     {
                         combination.push_back(vehicleUnits[i]);
-                        totalScore += scores[i];
+                        totalScore += vehicleUnits[i]->getScore();
                         ++used;
                     }
                 }
@@ -358,7 +359,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
                     if (mask & (1 << i))
                     {
                         combination.push_back(infantryUnits[i]);
-                        totalScore += scores[i + vehicleCount];
+                        totalScore += vehicleUnits[i]->getScore();
                         ++used;
                     }
                 }
@@ -517,20 +518,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
                 while (current)
                 {
                     current->unit->setQuantity(ceil(current->unit->getQuantity() * 0.9));
-
-                    if (current->unit->getQuantity() <= 1)
-                    {
-                        this->unitList->remove(current);
-                        if (prev)
-                            current = prev->next;
-                        else
-                            current = this->unitList->getHead();
-                    }
-                    else
-                    {
-                        prev = current;
-                        current = current->next;
-                    }
+                    current = current->next;
                 }
             }
 
@@ -1035,7 +1023,7 @@ void River::getEffect(Army *army)
         double distance = calcDistance(this->pos, unit->getCurrentPosition());
 
         if (distance <= 2.0 && infantry)
-            army->setScore(idx, ceil(army->getScore(idx) * 0.9));
+            infantry->setScore(ceil(infantry->getScore() * 0.9));
 
         current = current->next;
         idx++;
@@ -1064,14 +1052,14 @@ void Urban::getEffect(Army *army)
         if (libArmy)
         {
             if (vehicle && vehicle->getVehicleType() == ARTILLERY && distance <= 2.0)
-                army->setScore(idx, ceil(army->getScore(idx) * 0.5));
+                vehicle->setScore(ceil(vehicle->getScore() * 0.5));
             if (infantry && (infantry->getInfantryType() == SPECIALFORCES || infantry->getInfantryType() == REGULARINFANTRY) && distance <= 5.0)
-                army->setScore(idx, ceil(army->getScore(idx) + 2 * unit->getAttackScore() / distance));
+                infantry->setScore(ceil(infantry->getScore() + 2 * unit->getAttackScore() / distance));
         }
         else
         {
             if (infantry && infantry->getInfantryType() == REGULARINFANTRY && distance <= 5.0)
-                army->setScore(idx, ceil(army->getScore(idx) + 3 * unit->getAttackScore() / (distance * 2)));
+                infantry->setScore(ceil(infantry->getScore() + 3 * unit->getAttackScore() / (distance * 2)));
         }
 
         current = current->next;
@@ -1099,12 +1087,12 @@ void Fortification::getEffect(Army *army)
         if (libArmy)
         {
             if (distance <= 2.0)
-                army->setScore(idx, ceil(army->getScore(idx) * 0.8));
+                unit->setScore(ceil(unit->getScore() * 0.8));
         }
         else
         {
             if (distance <= 2.0)
-                army->setScore(idx, ceil(army->getScore(idx) * 1.2));
+                unit->setScore(ceil(unit->getScore() * 1.2));
         }
 
         current = current->next;
@@ -1126,7 +1114,7 @@ void SpecialZone::getEffect(Army* army) {
         double distance = calcDistance(this->pos, current->unit->getCurrentPosition());
 
         if (distance <= 1.0)
-            army->setScore(idx, 0);
+            unit->setScore(0);
 
         current = current->next;
         idx++;
@@ -1141,11 +1129,11 @@ vector<Position *> arrayUrban, vector<Position *> arraySpecialZone) {
     this->n_rows = n_rows;
     this->n_cols = n_cols;
 
-    this->arrayForest = arrayForest;
-    this->arrayRiver = arrayRiver;
-    this->arrayFortification = arrayFortification;
-    this->arrayUrban = arrayUrban;
-    this->arraySpecialZone = arraySpecialZone;
+    this->arrayForest = {};
+    this->arrayRiver = {};
+    this->arrayFortification = {};
+    this->arrayUrban = {};
+    this->arraySpecialZone = {};
 
     // Initialize terrain pointer and set default terrain is Road
     this->terrain = new TerrainElement**[this->n_rows];
@@ -1157,29 +1145,53 @@ vector<Position *> arrayUrban, vector<Position *> arraySpecialZone) {
     }
 
     // Set specific terrain types
-    for (Position* pos : this->arrayForest) {
-        delete terrain[pos->getRow()][pos->getCol()];
-        terrain[pos->getRow()][pos->getCol()] = new Mountain(Position(pos->getRow(), pos->getCol()));
+    for (Position* pos : arrayForest) {
+        int r = pos->getRow(), c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c <= n_cols) {
+            delete terrain[r][c];
+            terrain[r][c] = new Mountain(Position(r, c));
+            this->arrayForest.push_back(pos);
+        }
     }
 
-    for (Position* pos : this->arrayRiver) {
-        delete terrain[pos->getRow()][pos->getCol()];
-        terrain[pos->getRow()][pos->getCol()] = new River(Position(pos->getRow(), pos->getCol()));
+    for (Position* pos : arrayRiver) {
+        int r = pos->getRow(), c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c <= n_cols)
+        {
+            delete terrain[r][c];
+            terrain[r][c] = new River(Position(r, c));
+            this->arrayRiver.push_back(pos);
+        }
     }
 
-    for (Position* pos : this->arrayFortification) {
-        delete terrain[pos->getRow()][pos->getCol()];
-        terrain[pos->getRow()][pos->getCol()] = new Fortification(Position(pos->getRow(), pos->getCol()));
+    for (Position* pos : arrayFortification) {
+        int r = pos->getRow(), c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c <= n_cols)
+        {
+            delete terrain[r][c];
+            terrain[r][c] = new Fortification(Position(r, c));
+            this->arrayFortification.push_back(pos);
+        }
     }
 
-    for (Position* pos : this->arrayUrban) {
-        delete terrain[pos->getRow()][pos->getCol()];
-        terrain[pos->getRow()][pos->getCol()] = new Urban(Position(pos->getRow(), pos->getCol()));
+    for (Position* pos : arrayUrban) {
+        int r = pos->getRow(), c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c <= n_cols)
+        {
+            delete terrain[r][c];
+            terrain[r][c] = new Urban(Position(r, c));
+            this->arrayUrban.push_back(pos);
+        }
     }
 
-    for (Position* pos : this->arraySpecialZone) {
-        delete terrain[pos->getRow()][pos->getCol()];
-        terrain[pos->getRow()][pos->getCol()] = new SpecialZone(Position(pos->getRow(), pos->getCol()));
+    for (Position* pos : arraySpecialZone) {
+        int r = pos->getRow(), c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c <= n_cols)
+        {
+            delete terrain[r][c];
+            terrain[r][c] = new SpecialZone(Position(r, c));
+            this->arraySpecialZone.push_back(pos);
+        }
     }
 }
 
@@ -1673,7 +1685,6 @@ string Configuration::str() const {
 
 HCMCampaign::HCMCampaign(const string &config_file_path) {
     this->config = new Configuration(config_file_path);
-
     this->battleField = new BattleField(
         this->config->num_rows, config->num_cols,
         this->config->arrayForest,
@@ -1702,16 +1713,16 @@ void HCMCampaign::run() {
     // Apply terrain effects
     battleField->terrainEffect(liberationArmy);
     battleField->terrainEffect(arvn);
-    
+
     // Execute battle based on event code
     if (config->eventCode < 75) {
         // Liberation Army attacks
         liberationArmy->fight(arvn, false);
         // Remove weak units from both enemies
         liberationArmy->removeWeakUnits();
-        arvn->removeWeakUnits();
-        
-    } else {
+        arvn->removeWeakUnits(); 
+    } 
+    else {
         // ARVN attacks
         arvn->fight(liberationArmy, false);
         liberationArmy->fight(arvn, true);

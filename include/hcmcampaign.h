@@ -74,9 +74,6 @@ protected:
     UnitList *unitList;
     BattleField *battleField;
 
-    // Helper
-    vector<int> scores;
-
 public:
     Army(Unit **unitArray, int size, string name, BattleField *battleField);
     virtual void fight(Army *enemy, bool defense = false) = 0;
@@ -90,10 +87,8 @@ public:
     void setEXP(int EXP);
     void recalcIndex();
     void removeWeakUnits();
-    void calScore();
-    int getScore(int);
-    void setScore(int, int);
     bool isSpecialNumber(int);
+    void resetScore();
 };
 
 // TODO: Class LiberationArmy
@@ -141,6 +136,7 @@ class Unit
 protected:
     int quantity, weight;
     Position pos;
+    int score;
 
 public:
     Unit(int quantity, int weight, Position pos);
@@ -154,6 +150,8 @@ public:
     int getWeight() const;
     void setQuantity(int quantity);
     void setWeight(int weight);
+    void setScore(int);
+    int getScore();
 };
 
 // TODO: Class Vehicle
