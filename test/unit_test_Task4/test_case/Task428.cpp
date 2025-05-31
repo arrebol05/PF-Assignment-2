@@ -26,7 +26,7 @@ bool UNIT_TEST_Task4::Task428()
 
     //! remove data -----------------------------
     //! delete ----------------------------------
-    delete unitArrayOfLiber8;
+    delete[] unitArrayOfLiber8;
     delete liberationArmy8;
     
     //! result ----------------------------------
