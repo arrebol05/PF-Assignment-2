@@ -64,7 +64,6 @@ int Unit::getScore() {
 Vehicle::Vehicle(int quantity, int weight, const Position pos, VehicleType vehicleType) : Unit(quantity, weight, pos)
 {
     this->vehicleType = vehicleType;
-    setScore(getAttackScore());
 }
 
 Vehicle::~Vehicle() {}
@@ -96,7 +95,6 @@ int Infantry::calPersonalNumber(int number)
 Infantry::Infantry(int quantity, int weight, const Position pos, InfantryType infantryType) : Unit(quantity, weight, pos)
 {
     this->infantryType = infantryType;
-    setScore(getAttackScore());
 }
 
 Infantry::~Infantry() {}
@@ -141,11 +139,14 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
     {
         const Vehicle *vehicle = dynamic_cast<const Vehicle *>(unitArray[i]);
         const Infantry *infantry = dynamic_cast<const Infantry *>(unitArray[i]);
+        int score = unitArray[i]->getAttackScore();
+        unitArray[i]->setScore(score);
 
         if (vehicle)
-            this->LF += unitArray[i]->getAttackScore();
+            this->LF += score;
+            
         else
-            this->EXP += unitArray[i]->getAttackScore();
+            this->EXP += score;
     }
 
     if (LF > 1000)
@@ -401,7 +402,6 @@ void LiberationArmy::fight(Army *enemy, bool defense)
 
         if (win)
         {
-
             // Delete all the combinations, add enemy
             for (Vehicle *unit : bestVehicleCombination)
                 this->unitList->deleteVehicle(unit);
