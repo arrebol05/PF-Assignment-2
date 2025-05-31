@@ -208,7 +208,7 @@ private:
     int infantryCount;
 
 public:
-    UnitList(int capacity);
+    UnitList(int);
     bool insert(Unit *unit);                   // return true if insert successfully
     bool isContain(VehicleType vehicleType);   // return true if it exists
     bool isContain(InfantryType infantryType); // return true if it exists
@@ -226,6 +226,7 @@ public:
 
     void deleteVehicle(Vehicle *vehicle);
     void deleteInfantry(Infantry *infantry);
+    bool isSpecialNumber(int);
 };
 
 class TerrainElement

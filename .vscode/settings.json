@@ -6,6 +6,7 @@
         "iostream": "cpp",
         "string": "cpp",
         "unordered_map": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "iosfwd": "cpp"
     }
 }

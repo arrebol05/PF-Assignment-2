@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BUILD_CMD="g++ -std=c++17 -o main -Iinclude -Itest -Itest/unit_test_Task4 -g main.cpp \
+BUILD_CMD="g++ -fsanitize=address -std=c++17 -o main -Iinclude -Itest -Itest/unit_test_Task4 -g main.cpp \
 test/unit_test_Task4/unit_test_Task4.cpp test/unit_test.cpp \
 src/hcmcampaign.cpp \
 test/unit_test_Task4/test_case/*.cpp"

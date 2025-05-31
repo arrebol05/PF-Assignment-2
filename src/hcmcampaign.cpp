@@ -153,10 +153,7 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
     if (EXP > 500)
         EXP = 500;
 
-    if (isSpecialNumber(LF + EXP))
-        this->unitList = new UnitList(12);
-    else
-        this->unitList = new UnitList(8);
+    this->unitList = new UnitList(LF + EXP);
 
     for (int i = 0; i < size; i++)
         this->unitList->insert(unitArray[i]);
@@ -587,7 +584,7 @@ string ARVN::str() const
 }
 
 ////////////////////////////// Class UnitList //////////////////////////////
-bool Army::isSpecialNumber(int number)
+bool UnitList::isSpecialNumber(int number)
 {
     vector<int> power = {
         // Sum of powers of 3
@@ -613,9 +610,9 @@ bool Army::isSpecialNumber(int number)
     return false;
 }
 
-UnitList::UnitList(int capacity)
+UnitList::UnitList(int number)
 {
-    this->capacity = capacity;
+    this->capacity = isSpecialNumber(number) ? 12 : 8;
 
     this->head = nullptr;
     this->vehicleCount = 0;
@@ -973,6 +970,8 @@ Mountain::~Mountain() {}
 
 void Mountain::getEffect(Army *army)
 {
+    if (!army)
+        return;
     LiberationArmy *libArmy = dynamic_cast<LiberationArmy *>(army);
 
     UnitNode *current = army->getUnitList()->getHead();
@@ -1015,6 +1014,8 @@ River::~River() {}
 
 void River::getEffect(Army *army)
 {
+    if (!army)
+        return;
     int idx = 0;
     UnitNode *current = army->getUnitList()->getHead();
     while (current)
@@ -1039,6 +1040,8 @@ Urban::~Urban() {}
 
 void Urban::getEffect(Army *army)
 {
+    if (!army)
+        return;
     LiberationArmy *libArmy = dynamic_cast<LiberationArmy *>(army);
 
     int idx = 0;
@@ -1076,6 +1079,8 @@ Fortification::~Fortification() {}
 
 void Fortification::getEffect(Army *army)
 {
+    if (!army)
+        return;
     LiberationArmy *libArmy = dynamic_cast<LiberationArmy *>(army);
 
     int idx = 0;
@@ -1108,6 +1113,8 @@ SpecialZone::SpecialZone(Position pos) : TerrainElement(pos) {}
 SpecialZone::~SpecialZone() {}
 
 void SpecialZone::getEffect(Army* army) {
+    if (!army)
+        return;
     int idx = 0;
     UnitNode *current = army->getUnitList()->getHead();
     while (current) {
