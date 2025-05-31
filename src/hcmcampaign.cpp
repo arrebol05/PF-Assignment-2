@@ -272,8 +272,8 @@ void LiberationArmy::fight(Army *enemy, bool defense)
     if (!defense)
     {
         // Liberation Army got a boost
-        this->LF = safeCeil(this->LF * 1.5);
-        this->EXP = safeCeil(this->EXP * 1.5);
+        setLF(safeCeil(this->LF * 1.5));
+        setEXP(safeCeil(this->EXP * 1.5));
 
         /*
         Get vectors of vehicles & infantries for handling.
@@ -506,8 +506,10 @@ void LiberationArmy::fight(Army *enemy, bool defense)
     {
         // Defense case - rest of the method remains the same
         // Liberation Army has a boost of 1.3
-        this->LF = safeCeil(this->LF * 1.3);
-        this->EXP = safeCeil(this->EXP * 1.3);
+        setLF(safeCeil(this->LF * 1.3));
+        setEXP(safeCeil(this->EXP * 1.3));
+
+        
 
         // We loop till the fight end
         bool done = false;
@@ -542,10 +544,9 @@ void LiberationArmy::fight(Army *enemy, bool defense)
                     current = current->next;
                 }
                 done = false;
+                // Update index
+                recalcIndex();
             }
-
-            // Update index
-            recalcIndex();
         }
     }
 }
