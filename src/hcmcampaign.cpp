@@ -335,7 +335,8 @@ void LiberationArmy::fight(Army *enemy, bool defense)
                     }
                 }
 
-                if (totalScore > enemy->getEXP() && (totalScore < minVehicleScore || (totalScore == minVehicleScore &&  used < minVehicleUsed)))
+                // FIXED: Compare with enemy->getLF() for vehicles
+                if (totalScore > enemy->getLF() && (totalScore < minVehicleScore || (totalScore == minVehicleScore &&  used < minVehicleUsed)))
                 {
                     minVehicleScore = totalScore;
                     bestVehicleCombination = combination;
@@ -381,7 +382,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
             break;
         // Case found Vehicle combination: Check if win
         case 2:
-            if (EXP > enemy->getEXP())
+            if (this->EXP > enemy->getEXP())  // FIXED: Use this->EXP
             {
                 win = true;
                 bestInfantryCombination = infantryUnits;
@@ -389,7 +390,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
             break;
         // Case found Infantry combination: Check if win
         case 1:
-            if (LF > enemy->getLF())
+            if (this->LF > enemy->getLF())  // FIXED: Use this->LF
             {
                 win = true;
                 bestVehicleCombination = vehicleUnits;
@@ -438,9 +439,15 @@ void LiberationArmy::fight(Army *enemy, bool defense)
             For example, we have 0, 1, 2, 3 acting as infantry in UnitList
             When pushing them with insert, they will be inserted in order 0 -> 1 -> 2 -> 3
             Therefore the final result is 3, 2, 1, 0 #BUG
-            In order to resolve it, we need to seperate infantries and vehicles
+            In order to resolve it, we need to separate infantries and vehicles
             */
+
+            //Vector to store units that couldn't be inserted
             vector<Unit *> leftoverVehicle, leftoverInfantry;
+
+            // Separate vehicles and infantry for proper ordering
+            vector<Vehicle*> enemyVehicles;
+            vector<Infantry*> enemyInfantries;
 
             // Process each enemy unit
             for (Unit *enemyUnit : enemyUnits)
@@ -449,13 +456,26 @@ void LiberationArmy::fight(Army *enemy, bool defense)
                 Infantry *enemyInfantry = dynamic_cast<Infantry *>(enemyUnit);
 
                 // Insert does not success
-                if (!this->unitList->insert(enemyUnit))
-                {
-                    if (enemyVehicle)
-                        leftoverVehicle.push_back(enemyVehicle);
-                    else
-                        leftoverInfantry.push_back(enemyInfantry);
-                }
+                if (enemyVehicle)
+                    enemyVehicles.push_back(enemyVehicle);
+                else
+                    enemyInfantries.push_back(enemyInfantry);
+            }
+
+            // Process infantry in reverse order to maintain original sequence
+            // (since they're inserted at head)
+            for (auto it = enemyInfantries.rbegin(); it != enemyInfantries.rend(); ++it)
+            {
+                if (!this->unitList->insert(*it))
+                    leftoverInfantry.push_back(*it);
+            }
+
+            // Process vehicles in reverse order to maintain original enemy army order
+            // (since pop_front extracts them in reverse order from how they were originally)
+            for (auto it = enemyVehicles.rbegin(); it != enemyVehicles.rend(); ++it)
+            {
+                if (!this->unitList->insert(*it))
+                    leftoverVehicle.push_back(*it);
             }
 
             // Resolve leftover units
@@ -484,8 +504,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
     }
     else
     {
-        // Defense case
-
+        // Defense case - rest of the method remains the same
         // Liberation Army has a boost of 1.3
         this->LF = safeCeil(this->LF * 1.3);
         this->EXP = safeCeil(this->EXP * 1.3);
@@ -1264,7 +1283,7 @@ int BattleField::getCol() const {
 }
 
 string BattleField::str() const {
-    return "BattleField[n_rows=" + to_string(this->n_rows) + ",n_cols=" + to_string(this->n_cols);
+    return "BattleField[n_rows=" + to_string(this->n_rows) + ",n_cols=" + to_string(this->n_cols) + "]";
 }
 
 ////////////////////////////// Class Configuration //////////////////////////////
