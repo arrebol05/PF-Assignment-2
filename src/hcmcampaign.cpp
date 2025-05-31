@@ -159,6 +159,10 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
         this->unitList->insert(unitArray[i]);
 }
 
+Army::~Army() {
+    delete unitList;
+}
+
 UnitList *Army::getUnitList() const
 {
     return this->unitList;
@@ -1744,6 +1748,13 @@ void HCMCampaign::run() {
 string HCMCampaign::printResult() {
     return "LIBERATIONARMY[LF=" + to_string(this->liberationArmy->getLF()) + ",EXP=" + to_string(this->liberationArmy->getEXP()) 
             + "]-ARVN[LF=" + to_string(this->arvn->getLF()) + ",EXP=" + to_string(this->arvn->getEXP()) + "]";
+}
+
+HCMCampaign::~HCMCampaign() {
+    delete liberationArmy;
+    delete arvn;
+    delete battleField;
+    delete config;   
 }
 
 ////////////////////////////////////////////////

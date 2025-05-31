@@ -76,6 +76,7 @@ protected:
 
 public:
     Army(Unit **unitArray, int size, string name, BattleField *battleField);
+    virtual ~Army();
     virtual void fight(Army *enemy, bool defense = false) = 0;
     virtual string str() const = 0;
 
@@ -236,7 +237,7 @@ private:
 
 public:
     TerrainElement(Position pos);
-    ~TerrainElement();
+    virtual ~TerrainElement();
     virtual void getEffect(Army *army) = 0;
 
     // TODO: Helper method
@@ -385,6 +386,7 @@ private:
 
 public:
     HCMCampaign(const string &config_file_path);
+    ~HCMCampaign();
     void run();
     void removeWeakUnits(Army *army);
     string printResult();
