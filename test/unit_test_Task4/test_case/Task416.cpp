@@ -31,16 +31,12 @@ bool UNIT_TEST_Task4::Task416() {
     HCMCampaign* campaign = nullptr;
     string result;
     try {
-        cout << "I just see nothing\n";
         campaign = new HCMCampaign(cfg);
         result = "** Before the fight\n";
-        cout << "I just see nothing 1\n";
         result += campaign->printResult();
         result += "\n** After the fight\n";
-        cout << "I just see nothing 2\n";
         campaign->run();
         result += campaign->printResult();
-        cout << "I just see nothing 3\n";
         delete campaign;
     } catch(exception &e) {
         result = e.what();
