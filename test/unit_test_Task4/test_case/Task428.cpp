@@ -23,8 +23,10 @@ bool UNIT_TEST_Task4::Task428()
     //! output ----------------------------------
     stringstream output;
     output << liberationArmy8->str() << endl;
-    
+
     //! remove data -----------------------------
+    //! delete ----------------------------------
+    delete unitArrayOfLiber8;
     delete liberationArmy8;
     
     //! result ----------------------------------

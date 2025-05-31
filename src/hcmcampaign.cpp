@@ -526,11 +526,13 @@ void LiberationArmy::fight(Army *enemy, bool defense)
             // Reduction of each unit's quantity
             if (oneLower)
             {
-                UnitNode *current = this->unitList->getHead(), *prev = nullptr;
+                UnitNode *current = this->unitList->getHead();
                 while (current)
                 {
                     current->unit->setQuantity(safeCeil(current->unit->getQuantity() * 0.9));
                     current = current->next;
+                    // Update index
+                    recalcIndex();
                 }
             }
 
@@ -1466,6 +1468,13 @@ Unit* Configuration::createUnit(const string &str, int quantity, int weight, str
 }
 
 Configuration::Configuration(const string &filepath = nullptr) {
+    num_rows = 0, num_cols = 0;
+    arrayForest = {};
+    arrayRiver = {};
+    arrayFortification = {};
+    arrayUrban = {};
+    arraySpecialZone = {};
+
     this->liberationUnitCount = 0;
     this->arvnUnitCount = 0;
     this->eventCode = 0;

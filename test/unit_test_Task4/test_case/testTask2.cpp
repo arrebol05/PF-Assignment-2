@@ -1358,6 +1358,10 @@ bool UNIT_TEST_Task4::Task4241() {
     output << result;
 
     //! delete ----------------------------------
+    for (int i = 0; i < 12; ++i)
+    {
+        delete listveh[i];
+    }
 
     return printResult(output.str(), expect, name);
 }
@@ -1401,10 +1405,11 @@ bool UNIT_TEST_Task4::Task4243() {
 
     //! data ------------------------------------
     UnitList ul(-10);
+    Infantry *listveh[8];
     bool allInserted = true;
     for (int i = 0; i < 8; ++i) {
-        Infantry *inf = new Infantry(1, 1, Position(), REGULARINFANTRY);
-        if (!ul.insert(inf)) {
+        listveh[i] = new Infantry(1, 1, Position(), REGULARINFANTRY);
+        if (!ul.insert(listveh[i])) {
             allInserted = false;
             break;
         }
@@ -1420,6 +1425,12 @@ bool UNIT_TEST_Task4::Task4243() {
     //! output ----------------------------------
     stringstream output;
     output << result;
+
+    //! delete ----------------------------------
+    for (int i = 0; i < 8; ++i)
+    {
+        delete listveh[i];
+    }
 
     return printResult(output.str(), expect, name);
 }
