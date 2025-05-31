@@ -635,6 +635,8 @@ bool UnitList::insert(Unit *unit)
         Unit* exist = getVehicle(vehicle->getVehicleType());
 
         if (exist) {
+            if (exist == unit)
+                return false;
             exist->setQuantity(exist->getQuantity() + vehicle->getQuantity());
             exist->setWeight(max(exist->getWeight(), vehicle->getWeight()));
             exist->setScore(exist->getAttackScore());
@@ -670,6 +672,8 @@ bool UnitList::insert(Unit *unit)
         Unit *exist = getInfantry(infantry->getInfantryType());
 
         if (exist) {
+            if (exist == unit)
+                return false;
             exist->setQuantity(exist->getQuantity() + infantry->getQuantity());
             exist->setWeight(max(exist->getWeight(), infantry->getWeight()));
             exist->setScore(exist->getAttackScore());
@@ -778,10 +782,11 @@ UnitList::~UnitList()
     UnitNode *current = this->head;
     while (current)
     {
-        UnitNode *next = current->next;
-        delete current;
-        current = next;
+        UnitNode *temp = current;
+        current = current->next;
+        delete temp;
     }
+    this->head = nullptr;
 }
 
 void UnitList::remove(UnitNode *node)
