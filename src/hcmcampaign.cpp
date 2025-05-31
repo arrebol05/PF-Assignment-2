@@ -153,8 +153,6 @@ Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
     for (int i = 0; i < size; i++){
         this->unitList->insert(unitArray[i]);
     }
-    
-    resetScore();
 }
 
 UnitList *Army::getUnitList() const
@@ -239,15 +237,6 @@ void Army::removeWeakUnits()
     recalcIndex();
 }
 
-void Army::resetScore() {
-    UnitNode *current = this->unitList->getHead();
-    while (current)
-    {
-        current->unit->setScore(current->unit->getAttackScore());
-        current = current->next;
-    }
-}
-
 ////////////////////////////// Class LiberationArmy //////////////////////////////
 LiberationArmy::LiberationArmy(Unit **unitArray, int size, string name, BattleField *battleField) : Army(unitArray, size, name, battleField) {}
 
@@ -287,7 +276,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
         vector<Infantry *> infantryUnits;
 
         // Setup to initialize min as the sum of list vehicles/ infantries
-        int minVehicleScore = 0, minInfantryScore = 0, idx = 0;
+        int minVehicleScore = 0, minInfantryScore = 0;
 
         // Traverse from head to tail
         UnitNode *current = this->unitList->getHead();
@@ -359,7 +348,7 @@ void LiberationArmy::fight(Army *enemy, bool defense)
                     if (mask & (1 << i))
                     {
                         combination.push_back(infantryUnits[i]);
-                        totalScore += vehicleUnits[i]->getScore();
+                        totalScore += infantryUnits[i]->getScore();
                         ++used;
                     }
                 }
@@ -448,22 +437,17 @@ void LiberationArmy::fight(Army *enemy, bool defense)
             // Process each enemy unit
             for (Unit *enemyUnit : enemyUnits)
             {
-                bool unitExists = false;
-
                 Vehicle *enemyVehicle = dynamic_cast<Vehicle *>(enemyUnit);
                 Infantry *enemyInfantry = dynamic_cast<Infantry *>(enemyUnit);
 
                 // Case 2 & 3: The unit does not exist. Attempting to insert
-                if (!unitExists)
+                if (!this->unitList->insert(enemyUnit))
                 {
-                    if (!this->unitList->insert(enemyUnit))
-                    {
-                        // Insert does not success
-                        if (enemyVehicle)
-                            leftoverVehicle.push_back(enemyVehicle);
-                        else
-                            leftoverInfantry.push_back(enemyInfantry);
-                    }
+                    // Insert does not success
+                    if (enemyVehicle)
+                        leftoverVehicle.push_back(enemyVehicle);
+                    else
+                        leftoverInfantry.push_back(enemyInfantry);
                 }
             }
 
@@ -1023,7 +1007,7 @@ void River::getEffect(Army *army)
         double distance = calcDistance(this->pos, unit->getCurrentPosition());
 
         if (distance <= 2.0 && infantry)
-            infantry->setScore(ceil(infantry->getScore() * 0.9));
+            unit->setScore(ceil(unit->getScore() * 0.9));
 
         current = current->next;
         idx++;
@@ -1052,14 +1036,14 @@ void Urban::getEffect(Army *army)
         if (libArmy)
         {
             if (vehicle && vehicle->getVehicleType() == ARTILLERY && distance <= 2.0)
-                vehicle->setScore(ceil(vehicle->getScore() * 0.5));
+                unit->setScore(ceil(unit->getScore() * 0.5));
             if (infantry && (infantry->getInfantryType() == SPECIALFORCES || infantry->getInfantryType() == REGULARINFANTRY) && distance <= 5.0)
-                infantry->setScore(ceil(infantry->getScore() + 2 * unit->getAttackScore() / distance));
+                unit->setScore(ceil(unit->getScore() + 2 * unit->getAttackScore() / distance));
         }
         else
         {
             if (infantry && infantry->getInfantryType() == REGULARINFANTRY && distance <= 5.0)
-                infantry->setScore(ceil(infantry->getScore() + 3 * unit->getAttackScore() / (distance * 2)));
+                unit->setScore(ceil(unit->getScore() + 3 * unit->getAttackScore() / (distance * 2)));
         }
 
         current = current->next;

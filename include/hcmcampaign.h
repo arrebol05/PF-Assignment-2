@@ -88,7 +88,6 @@ public:
     void recalcIndex();
     void removeWeakUnits();
     bool isSpecialNumber(int);
-    void resetScore();
 };
 
 // TODO: Class LiberationArmy
